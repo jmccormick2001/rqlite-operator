@@ -1,0 +1,2 @@
+rqlite-image:   
+	docker build -f ./docker/Dockerfile -t jmccormick2001/rqlite:v0.0.1 ./docker
