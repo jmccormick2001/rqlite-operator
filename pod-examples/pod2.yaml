@@ -2,8 +2,8 @@ apiVersion: v1
 kind: Pod
 metadata:
   labels:
-    app: rqleader
-  name: rqpod1
+    app: rqlite
+  name: rqpod2
   namespace: default
 spec:
   containers:

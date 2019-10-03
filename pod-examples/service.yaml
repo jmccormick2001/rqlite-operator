@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: rqleader
+spec:
+  selector:
+    app: rqleader
+  ports:
+  - name: rq
+    port: 4001
+    targetPort: 4001
