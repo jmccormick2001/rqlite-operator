@@ -1,4 +1,12 @@
 #!/bin/bash
 
-rqlited -http-addr 0.0.0.0:4001 -raft-addr 0.0.0.0:4002 /rqlite/file/data
-#rqlited -http-addr 0.0.0.0:4001 -raft-addr 0.0.0.0:4002 -join rqcluster:4001 /rqlite/file/data
+
+function trap_sigterm() {
+killall rqlited
+}
+
+trap 'trap_sigterm' SIGINT SIGTERM
+
+echo $JOIN_ADDRESS is join address
+
+rqlited -http-addr $HOSTNAME:4001 -raft-addr $HOSTNAME:4002 $JOIN_ADDRESS /rqlite/file/data

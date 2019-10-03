@@ -10,6 +10,9 @@ spec:
   - name: rqlite
     image: jmccormick2001/rqlite:v0.0.1
     imagePullPolicy: IfNotPresent
+    env:
+    - name: JOIN_ADDRESS
+      value: "-join http://rqleader:4001"
     ports:
     - containerPort: 4001
       name: rqhttps
