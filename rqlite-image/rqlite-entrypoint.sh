@@ -2,7 +2,8 @@
 
 
 function trap_sigterm() {
-killall rqlited
+	echo "caught sigterm...gracefully shutting down rqlited"
+	killall rqlited
 }
 
 trap 'trap_sigterm' SIGINT SIGTERM
