@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rq
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: rq
+  template:
+    metadata:
+      labels:
+        name: rq
+    spec:
+      serviceAccountName: rq
+      containers:
+        - name: rq
+          # Replace this with the built image name
+          image: quay.io/jemccorm/rq-operator:v0.0.1
+          command:
+          - rq
+          imagePullPolicy: Always
+          env:
+            - name: WATCH_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: OPERATOR_NAME
+              value: "rq"

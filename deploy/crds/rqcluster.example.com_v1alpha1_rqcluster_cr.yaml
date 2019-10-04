@@ -1,0 +1,9 @@
+apiVersion: rqcluster.example.com/v1alpha1
+kind: Rqcluster
+metadata:
+  name: example-rqcluster
+spec:
+  # Add fields here
+  size: 3
+status:
+  nodes:
