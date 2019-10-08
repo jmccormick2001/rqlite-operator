@@ -1,0 +1,18 @@
+scorecard:
+  # Setting a global scorecard option
+  output: json
+  version: v1alpha2
+  plugins:
+    - basic:
+        init-timeout: 60
+        cr-manifest:
+          - "deploy/crds/rqcluster.example.com_v1alpha1_rqcluster_cr.yaml"
+        proxy-image: "quay.io/operator-framework/scorecard-proxy:dev"
+        proxy-pull-policy: "Never"
+    - olm:
+        init-timeout: 60
+        csv-path: "deploy/olm-catalog/rq/0.0.1/rq.v0.0.1.clusterserviceversion.yaml"
+        cr-manifest:
+          - "deploy/crds/rqcluster.example.com_v1alpha1_rqcluster_cr.yaml"
+        proxy-image: "quay.io/operator-framework/scorecard-proxy:dev"
+        proxy-pull-policy: "Never"
