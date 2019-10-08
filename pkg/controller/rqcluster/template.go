@@ -2,14 +2,16 @@ package rqcluster
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"gopkg.in/yaml.v2"
-	"k8s.io/client-go/kubernetes"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	rqclusterv1alpha1 "github.com/jmccormick2001/rq/pkg/apis/rqcluster/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	//	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
 	"text/template"
 )
@@ -27,7 +29,7 @@ const TemplateRoot = "/rq-configs"
 const PodTemplateFile = "pod-template.yaml"
 
 // newPodForCR returns a rqlite pod with the same name/namespace as the cr
-func newPodForCRFromTemplate(cr *rqclusterv1alpha1.Rqcluster) (*corev1.Pod, error) {
+func newPodForCRFromTemplate(cr *rqclusterv1alpha1.Rqcluster, client client.Client) (*corev1.Pod, error) {
 
 	var pod *corev1.Pod
 
@@ -37,7 +39,7 @@ func newPodForCRFromTemplate(cr *rqclusterv1alpha1.Rqcluster) (*corev1.Pod, erro
 		ServiceAccount: "default",
 	}
 
-	podBuffer, err := getPodTemplate(myPodInfo)
+	podBuffer, err := getPodTemplate(myPodInfo, cr.Namespace, client)
 	if err != nil {
 		return pod, err
 	}
@@ -56,10 +58,12 @@ func newPodForCRFromTemplate(cr *rqclusterv1alpha1.Rqcluster) (*corev1.Pod, erro
 	return pod, nil
 }
 
-func getPodTemplate(myPodInfo PodFields) (bytes.Buffer, error) {
+func getPodTemplate(myPodInfo PodFields, namespace string, client client.Client) (bytes.Buffer, error) {
 	var podBuffer bytes.Buffer
-	var client *kubernetes.Clientset
-	cMap, err := getConfigMap(client, myPodInfo.Namespace, ConfigMapName)
+
+	// lookup the rq configmap
+	cMap := &corev1.ConfigMap{}
+	err := client.Get(context.TODO(), types.NamespacedName{Name: ConfigMapName, Namespace: namespace}, cMap)
 	if err != nil {
 		return podBuffer, err
 	}
@@ -81,10 +85,4 @@ func getPodTemplate(myPodInfo PodFields) (bytes.Buffer, error) {
 	tmpl.Execute(&podBuffer, myPodInfo)
 
 	return podBuffer, nil
-}
-
-func getConfigMap(client *kubernetes.Clientset, namespace, name string) (*corev1.ConfigMap, error) {
-	cfg, err := client.CoreV1().ConfigMaps(namespace).Get(name, metav1.GetOptions{})
-	return cfg, err
-
 }

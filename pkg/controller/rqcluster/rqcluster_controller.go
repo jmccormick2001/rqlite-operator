@@ -2,6 +2,7 @@ package rqcluster
 
 import (
 	"context"
+	"fmt"
 
 	rqclusterv1alpha1 "github.com/jmccormick2001/rq/pkg/apis/rqcluster/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
@@ -93,6 +94,15 @@ func (r *ReconcileRqcluster) Reconcile(request reconcile.Request) (reconcile.Res
 		}
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
+	}
+
+	// get the Pod using the configmap, template, and CR
+	mypod, err := newPodForCRFromTemplate(instance, r.client)
+	if mypod == nil {
+		fmt.Println("mypod is nil")
+	}
+	if err != nil {
+		fmt.Println(err.Error())
 	}
 
 	// Define a new Pod object
