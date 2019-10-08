@@ -5,22 +5,25 @@ import (
 	"errors"
 	"fmt"
 	"gopkg.in/yaml.v2"
-	"io/ioutil"
+	"k8s.io/client-go/kubernetes"
 
 	rqclusterv1alpha1 "github.com/jmccormick2001/rq/pkg/apis/rqcluster/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
-	//metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
 	"text/template"
 )
 
 // rqlite pod template fields
 type PodFields struct {
+	Namespace      string
 	PodName        string
 	ServiceAccount string
 }
 
 // the rqlite pod template is found in the rqoperator ConfigMap
+const ConfigMapName = "rq-configs"
+const TemplateRoot = "/rq-configs"
 const PodTemplateFile = "pod-template.yaml"
 
 // newPodForCR returns a rqlite pod with the same name/namespace as the cr
@@ -29,7 +32,9 @@ func newPodForCRFromTemplate(cr *rqclusterv1alpha1.Rqcluster) (*corev1.Pod, erro
 	var pod *corev1.Pod
 
 	myPodInfo := PodFields{
-		PodName: "rqpod1",
+		PodName:        "rqpod1",
+		Namespace:      "default",
+		ServiceAccount: "default",
 	}
 
 	podBuffer, err := getPodTemplate(myPodInfo)
@@ -53,12 +58,17 @@ func newPodForCRFromTemplate(cr *rqclusterv1alpha1.Rqcluster) (*corev1.Pod, erro
 
 func getPodTemplate(myPodInfo PodFields) (bytes.Buffer, error) {
 	var podBuffer bytes.Buffer
-	buf, err := ioutil.ReadFile(PodTemplateFile)
+	var client *kubernetes.Clientset
+	cMap, err := getConfigMap(client, myPodInfo.Namespace, ConfigMapName)
 	if err != nil {
-		fmt.Println(err.Error())
 		return podBuffer, err
 	}
-	value := string(buf)
+
+	value := cMap.Data[PodTemplateFile]
+	if value == "" {
+		fmt.Println("pod template value is empty")
+		return podBuffer, err
+	}
 	fmt.Println(value)
 	var tmpl *template.Template
 	tmpl = template.Must(template.New("podtemplate").Parse(value))
@@ -71,4 +81,10 @@ func getPodTemplate(myPodInfo PodFields) (bytes.Buffer, error) {
 	tmpl.Execute(&podBuffer, myPodInfo)
 
 	return podBuffer, nil
+}
+
+func getConfigMap(client *kubernetes.Clientset, namespace, name string) (*corev1.ConfigMap, error) {
+	cfg, err := client.CoreV1().ConfigMaps(namespace).Get(name, metav1.GetOptions{})
+	return cfg, err
+
 }
