@@ -7,7 +7,7 @@ import (
 	rqclusterv1alpha1 "github.com/jmccormick2001/rq/pkg/apis/rqcluster/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	//metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -73,7 +73,6 @@ type ReconcileRqcluster struct {
 
 // Reconcile reads that state of the cluster for a Rqcluster object and makes changes based on the state read
 // and what is in the Rqcluster.Spec
-// TODO(user): Modify this Reconcile function to implement your Controller logic.  This example creates
 // a Pod as an example
 // Note:
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
@@ -96,63 +95,52 @@ func (r *ReconcileRqcluster) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, err
 	}
 
-	// get the Pod using the configmap, template, and CR
-	mypod, err := newPodForCRFromTemplate(instance, r.client)
-	if mypod == nil {
-		fmt.Println("mypod is nil")
-	}
+	// see if pods already exist for this rqcluster CR
+	podList := &corev1.PodList{}
+	err = r.client.List(context.TODO(), podList, client.InNamespace("default"), client.MatchingLabels{"cluster": instance.Name})
 	if err != nil {
-		fmt.Println(err.Error())
+		reqLogger.Error(err, "unable to find any pods that match this request")
+	} else {
+		fmt.Printf("jeff list got back %d\n", len(podList.Items))
 	}
 
-	// Define a new Pod object
-	//	pod := newPodForCR(instance)
+	if len(podList.Items) == 0 {
+		// create the cluster pods
 
-	// Set Rqcluster instance as the owner and controller
-	if err := controllerutil.SetControllerReference(instance, mypod, r.scheme); err != nil {
-		return reconcile.Result{}, err
-	}
-
-	// Check if this Pod already exists
-	found := &corev1.Pod{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: mypod.Name, Namespace: mypod.Namespace}, found)
-	if err != nil && errors.IsNotFound(err) {
-		reqLogger.Info("Creating a new Pod", "Pod.Namespace", mypod.Namespace, "Pod.Name", mypod.Name, "Namespace", mypod.ObjectMeta.Namespace)
-		err = r.client.Create(context.TODO(), mypod)
+		// Define a new Pod object
+		// get the Pod using the configmap, template, and CR
+		mypod, err := newPodForCRFromTemplate(instance, r.client)
+		if mypod == nil {
+			fmt.Println("mypod is nil")
+		}
 		if err != nil {
-			return reconcile.Result{}, err
+			fmt.Println(err.Error())
 		}
 
-		// Pod created successfully - don't requeue
+		// Set Rqcluster instance as the owner and controller
+		if err := controllerutil.SetControllerReference(instance, mypod, r.scheme); err != nil {
+			return reconcile.Result{}, err
+		}
+		// Check if this Pod already exists
+		found := &corev1.Pod{}
+		err = r.client.Get(context.TODO(), types.NamespacedName{Name: mypod.Name, Namespace: mypod.Namespace}, found)
+		if err != nil && errors.IsNotFound(err) {
+			reqLogger.Info("Creating a new Pod", "Pod.Namespace", mypod.Namespace, "Pod.Name", mypod.Name, "Namespace", mypod.ObjectMeta.Namespace)
+			err = r.client.Create(context.TODO(), mypod)
+			if err != nil {
+				return reconcile.Result{}, err
+			}
+
+			// Pod created successfully - don't requeue
+			return reconcile.Result{}, nil
+		} else if err != nil {
+			return reconcile.Result{}, err
+		}
+	} else {
+		// cluster Pods already exists
+		reqLogger.Info("jeff reconcile: here is where we handle checkingt the set of cluster pods")
 		return reconcile.Result{}, nil
-	} else if err != nil {
-		return reconcile.Result{}, err
 	}
 
-	// Pod already exists - don't requeue
-	reqLogger.Info("Skip reconcile: Pod already exists", "Pod.Namespace", found.Namespace, "Pod.Name", found.Name)
 	return reconcile.Result{}, nil
-}
-
-// newPodForCR returns a busybox pod with the same name/namespace as the cr
-func newPodForCR(cr *rqclusterv1alpha1.Rqcluster) *corev1.Pod {
-	labels := map[string]string{
-		"app": cr.Name,
-	}
-	return &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      cr.Name + "-pod",
-			Namespace: cr.Namespace,
-			Labels:    labels,
-		},
-		Spec: corev1.PodSpec{
-			Containers: []corev1.Container{
-				{
-					Name:    "busybox",
-					Image:   "busybox",
-					Command: []string{"sleep", "3600"},
-				},
-			},
-		},
-	}
 }

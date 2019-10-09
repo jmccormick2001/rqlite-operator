@@ -12,3 +12,5 @@ testit:
 cleanup:   
 	kubectl delete rqclusters --all
 	kubectl delete deploy --all
+operatorimage:   
+	operator-sdk build quay.io/jemccorm/rq-operator:v0.0.1

@@ -2,7 +2,8 @@
    "kind": "Pod",
    "metadata": {
       "labels": {
-         "vendor": "jmccormick2001"
+         "vendor": "jmccormick2001",
+         "cluster": "{{.ClusterName}}"
       },
       "name": "{{.PodName}}",
       "namespace": "{{.Namespace}}"

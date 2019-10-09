@@ -7,7 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"k8s.io/apimachinery/pkg/types"
+	"math/rand"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"time"
 
 	rqclusterv1alpha1 "github.com/jmccormick2001/rq/pkg/apis/rqcluster/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
@@ -21,21 +23,33 @@ type PodFields struct {
 	Namespace      string
 	PodName        string
 	ServiceAccount string
+	ClusterName    string
 }
 
 // the rqlite pod template is found in the rqoperator ConfigMap
 const ConfigMapName = "rq-config"
 const PodTemplateFile = "pod-template.json"
 
+const ServiceAccountName = "default"
+const letterBytes = "abcdefghijklmnopqrstuvwxyz"
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+
+}
+
 // newPodForCR returns a rqlite pod with the same name/namespace as the cr
 func newPodForCRFromTemplate(cr *rqclusterv1alpha1.Rqcluster, client client.Client) (*corev1.Pod, error) {
 
 	pod := corev1.Pod{}
 
+	podName := fmt.Sprintf("%s-%s", cr.Name, generateSuffix())
+
 	myPodInfo := PodFields{
-		PodName:        cr.Name + "-1",
+		PodName:        podName,
 		Namespace:      cr.Namespace,
-		ServiceAccount: "default",
+		ServiceAccount: ServiceAccountName,
+		ClusterName:    cr.Name,
 	}
 
 	podBuffer, err := getPodTemplate(myPodInfo, cr.Namespace, client)
@@ -45,16 +59,6 @@ func newPodForCRFromTemplate(cr *rqclusterv1alpha1.Rqcluster, client client.Clie
 
 	fmt.Println("podBuffer is %s\n", podBuffer.String())
 	err = json.Unmarshal(podBuffer.Bytes(), &pod)
-	/**
-	labels := map[string]string{
-		"app": cr.Name,
-	}
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      cr.Name + "-pod",
-			Namespace: cr.Namespace,
-			Labels:    labels,
-		},
-	*/
 	pod.ObjectMeta.Namespace = cr.Namespace
 	return &pod, nil
 }
@@ -86,4 +90,13 @@ func getPodTemplate(myPodInfo PodFields, namespace string, client client.Client)
 	tmpl.Execute(&podBuffer, myPodInfo)
 
 	return podBuffer, nil
+}
+
+// generate a 4 char random string
+func generateSuffix() string {
+	b := make([]byte, 4)
+	for i := range b {
+		b[i] = letterBytes[rand.Int63()%int64(len(letterBytes))]
+	}
+	return string(b)
 }
