@@ -3,9 +3,9 @@ package rqcluster
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
-	"gopkg.in/yaml.v2"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -24,27 +24,27 @@ type PodFields struct {
 }
 
 // the rqlite pod template is found in the rqoperator ConfigMap
-const ConfigMapName = "rq-configs"
-const TemplateRoot = "/rq-configs"
-const PodTemplateFile = "pod-template.yaml"
+const ConfigMapName = "rq-config"
+const PodTemplateFile = "pod-template.json"
 
 // newPodForCR returns a rqlite pod with the same name/namespace as the cr
 func newPodForCRFromTemplate(cr *rqclusterv1alpha1.Rqcluster, client client.Client) (*corev1.Pod, error) {
 
-	var pod *corev1.Pod
+	pod := corev1.Pod{}
 
 	myPodInfo := PodFields{
-		PodName:        "rqpod1",
-		Namespace:      "default",
+		PodName:        cr.Name + "-1",
+		Namespace:      cr.Namespace,
 		ServiceAccount: "default",
 	}
 
 	podBuffer, err := getPodTemplate(myPodInfo, cr.Namespace, client)
 	if err != nil {
-		return pod, err
+		return &pod, err
 	}
 
-	err = yaml.Unmarshal(podBuffer.Bytes(), pod)
+	fmt.Println("podBuffer is %s\n", podBuffer.String())
+	err = json.Unmarshal(podBuffer.Bytes(), &pod)
 	/**
 	labels := map[string]string{
 		"app": cr.Name,
@@ -55,7 +55,8 @@ func newPodForCRFromTemplate(cr *rqclusterv1alpha1.Rqcluster, client client.Clie
 			Labels:    labels,
 		},
 	*/
-	return pod, nil
+	pod.ObjectMeta.Namespace = cr.Namespace
+	return &pod, nil
 }
 
 func getPodTemplate(myPodInfo PodFields, namespace string, client client.Client) (bytes.Buffer, error) {

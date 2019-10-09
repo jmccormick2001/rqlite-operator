@@ -19,7 +19,7 @@ spec:
           image: quay.io/jemccorm/rq-operator:v0.0.1
           command:
           - rq
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           env:
             - name: WATCH_NAMESPACE
               valueFrom:
