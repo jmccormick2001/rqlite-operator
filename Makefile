@@ -6,12 +6,13 @@ configmap:
 	kubectl delete configmap rq-config -n rqnamespace --ignore-not-found
 	kubectl create configmap rq-config --from-file=./templates -n rqnamespace
 testit:   
-	kubectl create -f deploy/service_account.yaml -n rqnamespace
-	kubectl create -f deploy/role.yaml -n rqnamespace
-	kubectl create -f deploy/role_binding.yaml -n rqnamespace
 	kubectl create -f deploy/operator.yaml -n rqnamespace
 	sleep 10
 	kubectl create -f deploy/crds/rqcluster.example.com_v1alpha1_rqcluster_cr.yaml -n rqnamespace
+testitdefault:   
+	kubectl create -f deploy/operator.yaml 
+	sleep 10
+	kubectl create -f deploy/crds/rqcluster.example.com_v1alpha1_rqcluster_cr.yaml 
 cleanup:   
 	kubectl delete rqclusters --all -n rqnamespace
 	kubectl delete deploy --all -n rqnamespace

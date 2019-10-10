@@ -2,17 +2,13 @@ package rqcluster
 
 import (
 	"context"
-	"fmt"
-
 	rqclusterv1alpha1 "github.com/jmccormick2001/rq/pkg/apis/rqcluster/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	//metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -93,54 +89,7 @@ func (r *ReconcileRqcluster) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, err
 	}
 
-	err = rqReconcile(request, instance)
+	err = rqReconcile(r, request, instance)
 
-	// see if pods already exist for this rqcluster CR
-	podList := &corev1.PodList{}
-	err = r.client.List(context.TODO(), podList, client.InNamespace(request.Namespace), client.MatchingLabels{"cluster": instance.Name})
-	if err != nil {
-		reqLogger.Error(err, "unable to find any pods that match this request")
-	} else {
-		fmt.Printf("jeff list got back %d\n", len(podList.Items))
-	}
-
-	if len(podList.Items) == 0 {
-		// create the cluster pods
-
-		// Define a new Pod object
-		// get the Pod using the configmap, template, and CR
-		mypod, err := newPodForCRFromTemplate(instance, r.client)
-		if mypod == nil {
-			fmt.Println("mypod is nil")
-		}
-		if err != nil {
-			fmt.Println(err.Error())
-		}
-
-		// Set Rqcluster instance as the owner and controller
-		if err := controllerutil.SetControllerReference(instance, mypod, r.scheme); err != nil {
-			return reconcile.Result{}, err
-		}
-		// Check if this Pod already exists
-		found := &corev1.Pod{}
-		err = r.client.Get(context.TODO(), types.NamespacedName{Name: mypod.Name, Namespace: mypod.Namespace}, found)
-		if err != nil && errors.IsNotFound(err) {
-			reqLogger.Info("Creating a new Pod", "Pod.Namespace", mypod.Namespace, "Pod.Name", mypod.Name, "Namespace", mypod.ObjectMeta.Namespace)
-			err = r.client.Create(context.TODO(), mypod)
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-
-			// Pod created successfully - don't requeue
-			return reconcile.Result{}, nil
-		} else if err != nil {
-			return reconcile.Result{}, err
-		}
-	} else {
-		// cluster Pods already exists
-		reqLogger.Info("jeff reconcile: here is where we handle checkingt the set of cluster pods")
-		return reconcile.Result{}, nil
-	}
-
-	return reconcile.Result{}, nil
+	return reconcile.Result{}, err
 }
