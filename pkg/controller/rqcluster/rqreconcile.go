@@ -27,6 +27,11 @@ func rqReconcile(r *ReconcileRqcluster, request reconcile.Request, instance *rqc
 		return err
 	}
 
+	err = verifyServices(r, instance)
+	if err != nil {
+		return err
+	}
+
 	if len(podList.Items) == 0 {
 		for i := 0; i < 3; i++ {
 			err := createClusterPod(r, instance)
@@ -59,11 +64,9 @@ func createClusterPod(r *ReconcileRqcluster, instance *rqclusterv1alpha1.Rqclust
 	// Define a new Pod object
 	// get the Pod using the configmap, template, and CR
 	mypod, err := newPodForCRFromTemplate(instance, r.client)
-	if mypod == nil {
-		fmt.Println("mypod is nil")
-	}
 	if err != nil {
 		fmt.Println(err.Error())
+		return err
 	}
 
 	// Set Rqcluster instance as the owner and controller
@@ -81,6 +84,40 @@ func createClusterPod(r *ReconcileRqcluster, instance *rqclusterv1alpha1.Rqclust
 		}
 
 		// Pod created successfully - don't requeue
+		return nil
+	} else if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// verifyServices checks to see if there are 2 services for the
+// rqcluster, one is a leader service and the other a cluster service,
+// they are created if not found
+func verifyServices(r *ReconcileRqcluster, instance *rqclusterv1alpha1.Rqcluster) error {
+
+	// Check if the leader service already exists
+	leaderService, err := newServiceForCRFromTemplate(instance, r.client)
+	if err != nil {
+		fmt.Println(err.Error())
+		return err
+	}
+	found := &corev1.Service{}
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: leaderService.Name, Namespace: leaderService.Namespace}, found)
+	if err != nil && errors.IsNotFound(err) {
+		log.Info("Creating a new leader service", "Pod.Namespace", leaderService.Namespace, "Pod.Name", leaderService.Name, "Namespace", leaderService.ObjectMeta.Namespace)
+
+		// Set Rqcluster instance as the owner and controller
+		if err := controllerutil.SetControllerReference(instance, leaderService, r.scheme); err != nil {
+			return err
+		}
+		err = r.client.Create(context.TODO(), leaderService)
+		if err != nil {
+			return err
+		}
+
+		// leader Service created successfully - don't requeue
 		return nil
 	} else if err != nil {
 		return err

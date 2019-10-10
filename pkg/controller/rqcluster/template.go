@@ -14,7 +14,6 @@ import (
 	rqclusterv1alpha1 "github.com/jmccormick2001/rq/pkg/apis/rqcluster/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	//	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"os"
 	"text/template"
 )
 
@@ -26,9 +25,23 @@ type PodFields struct {
 	ClusterName    string
 }
 
+// rqlite service template fields
+type ServiceFields struct {
+	Namespace    string
+	ServiceName  string
+	ClusterName  string
+	LeaderStatus bool
+}
+
+type ConfigMapTemplates struct {
+	ServiceTemplate *template.Template
+	PodTemplate     *template.Template
+}
+
 // the rqlite pod template is found in the rqoperator ConfigMap
 const ConfigMapName = "rq-config"
 const PodTemplateFile = "pod-template.json"
+const ServiceTemplateFile = "service-template.json"
 
 const ServiceAccountName = "default"
 const letterBytes = "abcdefghijklmnopqrstuvwxyz"
@@ -52,10 +65,13 @@ func newPodForCRFromTemplate(cr *rqclusterv1alpha1.Rqcluster, client client.Clie
 		ClusterName:    cr.Name,
 	}
 
-	podBuffer, err := getPodTemplate(myPodInfo, cr.Namespace, client)
+	templates, err := getTemplates(cr.Namespace, client)
 	if err != nil {
 		return &pod, err
 	}
+
+	var podBuffer bytes.Buffer
+	templates.PodTemplate.Execute(&podBuffer, myPodInfo)
 
 	fmt.Println("podBuffer is %s\n", podBuffer.String())
 	err = json.Unmarshal(podBuffer.Bytes(), &pod)
@@ -63,33 +79,61 @@ func newPodForCRFromTemplate(cr *rqclusterv1alpha1.Rqcluster, client client.Clie
 	return &pod, nil
 }
 
-func getPodTemplate(myPodInfo PodFields, namespace string, client client.Client) (bytes.Buffer, error) {
-	var podBuffer bytes.Buffer
+// newServiceForCR returns a rqlite service with the same name/namespace as the cr
+func newServiceForCRFromTemplate(cr *rqclusterv1alpha1.Rqcluster, client client.Client) (*corev1.Service, error) {
+
+	svc := corev1.Service{}
+
+	mySvcInfo := ServiceFields{
+		ServiceName:  cr.Name,
+		Namespace:    cr.Namespace,
+		ClusterName:  cr.Name,
+		LeaderStatus: true,
+	}
+
+	templates, err := getTemplates(cr.Namespace, client)
+	if err != nil {
+		return &svc, err
+	}
+
+	var svcBuffer bytes.Buffer
+	templates.ServiceTemplate.Execute(&svcBuffer, mySvcInfo)
+
+	fmt.Println("svcBuffer is %s\n", svcBuffer.String())
+	err = json.Unmarshal(svcBuffer.Bytes(), &svc)
+	svc.ObjectMeta.Namespace = cr.Namespace
+	return &svc, nil
+}
+
+func getTemplates(namespace string, client client.Client) (ConfigMapTemplates, error) {
+	templates := ConfigMapTemplates{}
 
 	// lookup the rq configmap
 	cMap := &corev1.ConfigMap{}
 	err := client.Get(context.TODO(), types.NamespacedName{Name: ConfigMapName, Namespace: namespace}, cMap)
 	if err != nil {
-		return podBuffer, err
+		return templates, err
 	}
 
 	value := cMap.Data[PodTemplateFile]
 	if value == "" {
-		fmt.Println("pod template value is empty")
-		return podBuffer, err
+		return templates, err
 	}
-	fmt.Println(value)
-	var tmpl *template.Template
-	tmpl = template.Must(template.New("podtemplate").Parse(value))
-	if tmpl == nil {
-		fmt.Println("error in template")
-		return podBuffer, errors.New("template didnt parse")
+	templates.PodTemplate = template.Must(template.New("podtemplate").Parse(value))
+	if templates.PodTemplate == nil {
+		return templates, errors.New("pod template didnt parse")
 	}
 
-	tmpl.Execute(os.Stdout, myPodInfo)
-	tmpl.Execute(&podBuffer, myPodInfo)
+	value = cMap.Data[ServiceTemplateFile]
+	if value == "" {
+		return templates, err
+	}
+	templates.ServiceTemplate = template.Must(template.New("servicetemplate").Parse(value))
+	if templates.ServiceTemplate == nil {
+		return templates, errors.New("service template didnt parse")
+	}
 
-	return podBuffer, nil
+	return templates, nil
 }
 
 // generate a 4 char random string

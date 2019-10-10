@@ -4,7 +4,10 @@ rqliteimage:
 	docker tag docker.io/jmccormick2001/rqlite:v0.0.1  jmccormick2001/rqlite:v0.0.1
 configmap:   
 	kubectl delete configmap rq-config -n rqnamespace --ignore-not-found
-	kubectl create configmap rq-config --from-file=./templates -n rqnamespace
+	kubectl create configmap rq-config \
+		--from-file=./templates/pod-template.json \
+		--from-file=./templates/service-template.json \
+		-n rqnamespace
 testit:   
 	kubectl create -f deploy/operator.yaml -n rqnamespace
 	sleep 10
