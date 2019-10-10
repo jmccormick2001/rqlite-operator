@@ -86,8 +86,6 @@ func (r *ReconcileRqcluster) Reconcile(request reconcile.Request) (reconcile.Res
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			// Request object not found, could have been deleted after reconcile request.
-			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
 			// Return and don't requeue
 			return reconcile.Result{}, nil
 		}
@@ -95,9 +93,11 @@ func (r *ReconcileRqcluster) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, err
 	}
 
+	err = rqReconcile(request, instance)
+
 	// see if pods already exist for this rqcluster CR
 	podList := &corev1.PodList{}
-	err = r.client.List(context.TODO(), podList, client.InNamespace("default"), client.MatchingLabels{"cluster": instance.Name})
+	err = r.client.List(context.TODO(), podList, client.InNamespace(request.Namespace), client.MatchingLabels{"cluster": instance.Name})
 	if err != nil {
 		reqLogger.Error(err, "unable to find any pods that match this request")
 	} else {
