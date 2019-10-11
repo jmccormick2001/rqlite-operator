@@ -23,6 +23,7 @@ type PodFields struct {
 	PodName        string
 	ServiceAccount string
 	ClusterName    string
+	JoinAddress    string
 }
 
 // rqlite service template fields
@@ -52,7 +53,7 @@ func init() {
 }
 
 // newPodForCR returns a rqlite pod with the same name/namespace as the cr
-func newPodForCRFromTemplate(cr *rqclusterv1alpha1.Rqcluster, client client.Client) (*corev1.Pod, error) {
+func newPodForCRFromTemplate(joinAddress string, cr *rqclusterv1alpha1.Rqcluster, client client.Client) (*corev1.Pod, error) {
 
 	pod := corev1.Pod{}
 
@@ -63,6 +64,7 @@ func newPodForCRFromTemplate(cr *rqclusterv1alpha1.Rqcluster, client client.Clie
 		Namespace:      cr.Namespace,
 		ServiceAccount: ServiceAccountName,
 		ClusterName:    cr.Name,
+		JoinAddress:    joinAddress,
 	}
 
 	templates, err := getTemplates(cr.Namespace, client)

@@ -7,6 +7,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"time"
 	//logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -32,9 +33,27 @@ func rqReconcile(r *ReconcileRqcluster, request reconcile.Request, instance *rqc
 		return err
 	}
 
-	if len(podList.Items) == 0 {
-		for i := 0; i < 3; i++ {
-			err := createClusterPod(r, instance)
+	requestedPodCount := 3
+	podCount := len(podList.Items)
+	if podCount != requestedPodCount {
+
+		//handle the case of a new cluster, we need a leader
+		//pod to be created first before creating the followers
+		if podCount == 0 {
+			err := createClusterPod(true, r, instance)
+			if err != nil {
+				return err
+			}
+			//a not so great way to let the leader get started
+			//before creating the followers
+			time.Sleep(time.Duration(4) * time.Second)
+
+			podCount += 1
+		}
+
+		podsToCreate := requestedPodCount - podCount
+		for i := 0; i < podsToCreate; i++ {
+			err := createClusterPod(false, r, instance)
 			if err != nil {
 				return err
 			}
@@ -59,11 +78,15 @@ func getPods(r *ReconcileRqcluster, requestNamespace, instanceName string) (*cor
 	return podList, nil
 }
 
-func createClusterPod(r *ReconcileRqcluster, instance *rqclusterv1alpha1.Rqcluster) error {
+func createClusterPod(leader bool, r *ReconcileRqcluster, instance *rqclusterv1alpha1.Rqcluster) error {
+	var joinAddress string
+	if !leader {
+		joinAddress = fmt.Sprintf("--join http://%s-leader:4001", instance.Name)
+	}
 	// create the cluster pods
 	// Define a new Pod object
 	// get the Pod using the configmap, template, and CR
-	mypod, err := newPodForCRFromTemplate(instance, r.client)
+	mypod, err := newPodForCRFromTemplate(joinAddress, instance, r.client)
 	if err != nil {
 		fmt.Println(err.Error())
 		return err

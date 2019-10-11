@@ -12,6 +12,12 @@
       "containers": [
          {
             "name": "rqlite",
+	    "env": [
+               {
+                  "name": "JOIN_ADDRESS",
+		  "value": "{{.JoinAddress}}"
+               }
+            ],
             "image": "jmccormick2001/rqlite:v0.0.1",
             "imagePullPolicy": "IfNotPresent",
             "ports": [
