@@ -30,7 +30,7 @@ type ServiceFields struct {
 	Namespace    string
 	ServiceName  string
 	ClusterName  string
-	LeaderStatus bool
+	LeaderStatus string
 }
 
 type ConfigMapTemplates struct {
@@ -80,15 +80,21 @@ func newPodForCRFromTemplate(cr *rqclusterv1alpha1.Rqcluster, client client.Clie
 }
 
 // newServiceForCR returns a rqlite service with the same name/namespace as the cr
-func newServiceForCRFromTemplate(cr *rqclusterv1alpha1.Rqcluster, client client.Client) (*corev1.Service, error) {
+func newServiceForCRFromTemplate(leader bool, cr *rqclusterv1alpha1.Rqcluster, client client.Client) (*corev1.Service, error) {
 
 	svc := corev1.Service{}
 
+	leaderStatus := ""
+	serviceName := cr.Name
+	if leader {
+		leaderStatus = `"leader":"true",`
+		serviceName = serviceName + "-leader"
+	}
 	mySvcInfo := ServiceFields{
-		ServiceName:  cr.Name,
+		ServiceName:  serviceName,
 		Namespace:    cr.Namespace,
 		ClusterName:  cr.Name,
-		LeaderStatus: true,
+		LeaderStatus: leaderStatus,
 	}
 
 	templates, err := getTemplates(cr.Namespace, client)

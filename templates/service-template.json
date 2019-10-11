@@ -16,7 +16,7 @@
             }
         ],
         "selector": {
-            "rqleader": "{{.LeaderStatus}}",
+            {{.LeaderStatus}}
             "cluster": "{{.ClusterName}}"
         },
         "sessionAffinity": "None",
