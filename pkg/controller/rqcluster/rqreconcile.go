@@ -101,6 +101,10 @@ func createClusterPod(leader bool, r *ReconcileRqcluster, instance *rqclusterv1a
 	err = r.client.Get(context.TODO(), types.NamespacedName{Name: mypod.Name, Namespace: mypod.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
 		log.Info("Creating a new Pod", "Pod.Namespace", mypod.Namespace, "Pod.Name", mypod.Name, "Namespace", mypod.ObjectMeta.Namespace)
+		if leader {
+			fmt.Println("jeff setting leader label to true on pod")
+			mypod.ObjectMeta.Labels["leader"] = "true"
+		}
 		err = r.client.Create(context.TODO(), mypod)
 		if err != nil {
 			return err
