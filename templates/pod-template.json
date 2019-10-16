@@ -3,7 +3,8 @@
    "metadata": {
       "labels": {
          "vendor": "jmccormick2001",
-         "cluster": "{{.ClusterName}}"
+         "cluster": "{{.ClusterName}}",
+         "pod": "{{.PodName}}"
       },
       "name": "{{.PodName}}",
       "namespace": "{{.Namespace}}"

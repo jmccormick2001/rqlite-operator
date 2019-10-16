@@ -32,6 +32,7 @@ type ServiceFields struct {
 	ServiceName  string
 	ClusterName  string
 	LeaderStatus string
+	PodNameMatch string
 }
 
 type ConfigMapTemplates struct {
@@ -81,10 +82,22 @@ func newPodForCRFromTemplate(joinAddress string, cr *rqclusterv1alpha1.Rqcluster
 	return &pod, nil
 }
 
+// newServiceForPod
+func newServiceForPod(podName string, cr *rqclusterv1alpha1.Rqcluster, client client.Client) (*corev1.Service, error) {
+
+	mySvcInfo := ServiceFields{
+		ServiceName:  podName,
+		Namespace:    cr.Namespace,
+		ClusterName:  cr.Name,
+		PodNameMatch: fmt.Sprintf(`"pod":"%s",`, podName),
+		LeaderStatus: "",
+	}
+
+	return createService(mySvcInfo, cr, client)
+}
+
 // newServiceForCR returns a rqlite service with the same name/namespace as the cr
 func newServiceForCRFromTemplate(leader bool, cr *rqclusterv1alpha1.Rqcluster, client client.Client) (*corev1.Service, error) {
-
-	svc := corev1.Service{}
 
 	leaderStatus := ""
 	serviceName := cr.Name
@@ -92,12 +105,21 @@ func newServiceForCRFromTemplate(leader bool, cr *rqclusterv1alpha1.Rqcluster, c
 		leaderStatus = `"leader":"true",`
 		serviceName = serviceName + "-leader"
 	}
+
 	mySvcInfo := ServiceFields{
 		ServiceName:  serviceName,
 		Namespace:    cr.Namespace,
 		ClusterName:  cr.Name,
+		PodNameMatch: "",
 		LeaderStatus: leaderStatus,
 	}
+
+	return createService(mySvcInfo, cr, client)
+}
+
+func createService(mySvcInfo ServiceFields, cr *rqclusterv1alpha1.Rqcluster, client client.Client) (*corev1.Service, error) {
+
+	svc := corev1.Service{}
 
 	templates, err := getTemplates(cr.Namespace, client)
 	if err != nil {
@@ -107,7 +129,7 @@ func newServiceForCRFromTemplate(leader bool, cr *rqclusterv1alpha1.Rqcluster, c
 	var svcBuffer bytes.Buffer
 	templates.ServiceTemplate.Execute(&svcBuffer, mySvcInfo)
 
-	fmt.Println("svcBuffer is %s\n", svcBuffer.String())
+	fmt.Printf("jeff svcBuffer is %s\n", svcBuffer.String())
 	err = json.Unmarshal(svcBuffer.Bytes(), &svc)
 	svc.ObjectMeta.Namespace = cr.Namespace
 	return &svc, nil

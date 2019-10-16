@@ -16,7 +16,7 @@ spec:
       containers:
         - name: rq
           # Replace this with the built image name
-          image: quay.io/jemccorm/rq-operator:v0.0.1
+          image: quay.io/jemccorm/rqlite-operator:v0.0.1
           command:
           - rq
           imagePullPolicy: IfNotPresent

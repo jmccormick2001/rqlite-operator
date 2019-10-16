@@ -17,6 +17,7 @@
         ],
         "selector": {
             {{.LeaderStatus}}
+            {{.PodNameMatch}}
             "cluster": "{{.ClusterName}}"
         },
         "sessionAffinity": "None",

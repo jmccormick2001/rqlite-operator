@@ -20,4 +20,4 @@ cleanup:
 	kubectl delete rqclusters --all -n rqnamespace
 	kubectl delete deploy --all -n rqnamespace
 operatorimage:   
-	operator-sdk build quay.io/jemccorm/rq-operator:v0.0.1
+	operator-sdk build quay.io/jemccorm/rqlite-operator:v0.0.1

@@ -79,6 +79,7 @@ func getPods(r *ReconcileRqcluster, requestNamespace, instanceName string) (*cor
 }
 
 func createClusterPod(leader bool, r *ReconcileRqcluster, instance *rqclusterv1alpha1.Rqcluster) error {
+
 	var joinAddress string
 	if !leader {
 		joinAddress = fmt.Sprintf("--join http://%s-leader:4001", instance.Name)
@@ -89,6 +90,28 @@ func createClusterPod(leader bool, r *ReconcileRqcluster, instance *rqclusterv1a
 	mypod, err := newPodForCRFromTemplate(joinAddress, instance, r.client)
 	if err != nil {
 		fmt.Println(err.Error())
+		return err
+	}
+
+	// Create a service for the pod if it doesn't exist
+	fmt.Println("jeff checking for pod service...")
+	svcfound := &corev1.Service{}
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: mypod.Name, Namespace: mypod.Namespace}, svcfound)
+	if err != nil && errors.IsNotFound(err) {
+		fmt.Println("jeff creating service for pod")
+		podSvc, err := newServiceForPod(mypod.Name, instance, r.client)
+		if err != nil {
+			return err
+		}
+		// Set Rqcluster instance as the owner and controller
+		if err := controllerutil.SetControllerReference(instance, podSvc, r.scheme); err != nil {
+			return err
+		}
+		err = r.client.Create(context.TODO(), podSvc)
+		if err != nil {
+			return err
+		}
+	} else if err != nil {
 		return err
 	}
 
@@ -119,9 +142,10 @@ func createClusterPod(leader bool, r *ReconcileRqcluster, instance *rqclusterv1a
 	return nil
 }
 
-// verifyServices checks to see if there are 2 services for the
-// rqcluster, one is a leader service and the other a cluster service,
-// they are created if not found
+// verifyServices checks to see if there is ...
+// a service for each pod in the cluster
+// a service for the cluster leader
+// a service that will select on all pods in the cluster
 func verifyServices(r *ReconcileRqcluster, instance *rqclusterv1alpha1.Rqcluster) error {
 
 	// Check if the leader service already exists
