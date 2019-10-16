@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
+	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"time"
@@ -33,7 +34,7 @@ func rqReconcile(r *ReconcileRqcluster, request reconcile.Request, instance *rqc
 		return err
 	}
 
-	requestedPodCount := 3
+	requestedPodCount := int(instance.Spec.Size)
 	podCount := len(podList.Items)
 	if podCount != requestedPodCount {
 
@@ -61,8 +62,8 @@ func rqReconcile(r *ReconcileRqcluster, request reconcile.Request, instance *rqc
 	}
 
 	// cluster Pods already exists
-	log.Info("jeff reconcile: here is where we handle checkingt the set of cluster pods")
-	return nil
+
+	return updateStatus(podList.Items, r, instance)
 }
 
 // getPods returns the list of pods for a given namespace and instance
@@ -84,9 +85,7 @@ func createClusterPod(leader bool, r *ReconcileRqcluster, instance *rqclusterv1a
 	if !leader {
 		joinAddress = fmt.Sprintf("--join http://%s-leader:4001", instance.Name)
 	}
-	// create the cluster pods
-	// Define a new Pod object
-	// get the Pod using the configmap, template, and CR
+	// define a new cluster Pod
 	mypod, err := newPodForCRFromTemplate(joinAddress, instance, r.client)
 	if err != nil {
 		fmt.Println(err.Error())
@@ -94,11 +93,9 @@ func createClusterPod(leader bool, r *ReconcileRqcluster, instance *rqclusterv1a
 	}
 
 	// Create a service for the pod if it doesn't exist
-	fmt.Println("jeff checking for pod service...")
 	svcfound := &corev1.Service{}
 	err = r.client.Get(context.TODO(), types.NamespacedName{Name: mypod.Name, Namespace: mypod.Namespace}, svcfound)
 	if err != nil && errors.IsNotFound(err) {
-		fmt.Println("jeff creating service for pod")
 		podSvc, err := newServiceForPod(mypod.Name, instance, r.client)
 		if err != nil {
 			return err
@@ -119,13 +116,13 @@ func createClusterPod(leader bool, r *ReconcileRqcluster, instance *rqclusterv1a
 	if err := controllerutil.SetControllerReference(instance, mypod, r.scheme); err != nil {
 		return err
 	}
+
 	// Check if this Pod already exists
 	found := &corev1.Pod{}
 	err = r.client.Get(context.TODO(), types.NamespacedName{Name: mypod.Name, Namespace: mypod.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
 		log.Info("Creating a new Pod", "Pod.Namespace", mypod.Namespace, "Pod.Name", mypod.Name, "Namespace", mypod.ObjectMeta.Namespace)
 		if leader {
-			fmt.Println("jeff setting leader label to true on pod")
 			mypod.ObjectMeta.Labels["leader"] = "true"
 		}
 		err = r.client.Create(context.TODO(), mypod)
@@ -143,7 +140,6 @@ func createClusterPod(leader bool, r *ReconcileRqcluster, instance *rqclusterv1a
 }
 
 // verifyServices checks to see if there is ...
-// a service for each pod in the cluster
 // a service for the cluster leader
 // a service that will select on all pods in the cluster
 func verifyServices(r *ReconcileRqcluster, instance *rqclusterv1alpha1.Rqcluster) error {
@@ -178,4 +174,22 @@ func verifyServices(r *ReconcileRqcluster, instance *rqclusterv1alpha1.Rqcluster
 	}
 
 	return nil
+}
+
+func updateStatus(pods []corev1.Pod, r *ReconcileRqcluster, instance *rqclusterv1alpha1.Rqcluster) error {
+	var podNames []string
+	for _, pod := range pods {
+		podNames = append(podNames, pod.Name)
+	}
+	// Update status.Nodes if needed
+	if !reflect.DeepEqual(podNames, instance.Status.Nodes) {
+		instance.Status.Nodes = podNames
+		err := r.client.Status().Update(context.TODO(), instance)
+		if err != nil {
+			log.Error(err, "Failed to update rqcluster status")
+			return err
+		}
+	}
+	return nil
+
 }
