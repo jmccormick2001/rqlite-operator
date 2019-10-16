@@ -1,7 +1,7 @@
 rqliteimage:   
-	sudo --preserve-env buildah bud -f ./rqlite-image/Dockerfile -t jmccormick2001/rqlite:v0.0.1 ./rqlite-image
-	sudo --preserve-env buildah push jmccormick2001/rqlite:v0.0.1 docker-daemon:jmccormick2001/rqlite:v0.0.1
-	docker tag docker.io/jmccormick2001/rqlite:v0.0.1  jmccormick2001/rqlite:v0.0.1
+	sudo --preserve-env buildah bud -f ./rqlite-image/Dockerfile -t jemccorm/rqlite:v0.0.1 ./rqlite-image
+	sudo --preserve-env buildah push --authfile /home/jeffmc/.docker/config.json jemccorm/rqlite:v0.0.1 docker://quay.io/jemccorm/rqlite:v0.0.1
+	docker tag quay.io/jemccorm/rqlite:v0.0.1  jemccorm/rqlite:v0.0.1 
 configmap:   
 	kubectl delete configmap rq-config -n rqnamespace --ignore-not-found
 	kubectl create configmap rq-config \

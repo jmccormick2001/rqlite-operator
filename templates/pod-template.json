@@ -19,7 +19,7 @@
 		  "value": "{{.JoinAddress}}"
                }
             ],
-            "image": "jmccormick2001/rqlite:v0.0.1",
+            "image": "quay.io/jemccorm/rqlite:v0.0.1",
             "imagePullPolicy": "IfNotPresent",
             "ports": [
                {
