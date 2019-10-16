@@ -61,7 +61,7 @@ func rqReconcile(r *ReconcileRqcluster, request reconcile.Request, instance *rqc
 		}
 	}
 
-	// cluster Pods already exists
+	// at this point, the cluster's pods should exist
 
 	return updateStatus(podList.Items, r, instance)
 }
@@ -75,7 +75,6 @@ func getPods(r *ReconcileRqcluster, requestNamespace, instanceName string) (*cor
 		return podList, err
 	}
 
-	fmt.Printf("jeff list got back %d\n", len(podList.Items))
 	return podList, nil
 }
 
@@ -88,7 +87,6 @@ func createClusterPod(leader bool, r *ReconcileRqcluster, instance *rqclusterv1a
 	// define a new cluster Pod
 	mypod, err := newPodForCRFromTemplate(joinAddress, instance, r.client)
 	if err != nil {
-		fmt.Println(err.Error())
 		return err
 	}
 
@@ -149,7 +147,6 @@ func verifyServices(r *ReconcileRqcluster, instance *rqclusterv1alpha1.Rqcluster
 	for _, v := range leaderStatus {
 		leaderService, err := newServiceForCRFromTemplate(v, instance, r.client)
 		if err != nil {
-			fmt.Println(err.Error())
 			return err
 		}
 		found := &corev1.Service{}
