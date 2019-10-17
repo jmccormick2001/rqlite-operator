@@ -8,21 +8,17 @@ import (
 	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"time"
-	//logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"time"
 
 	rqclusterv1alpha1 "github.com/jmccormick2001/rq/pkg/apis/rqcluster/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
-	//	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
-
-//var log = logf.Log.WithName("rqReconcile")
 
 // rqReconcile implements the Reconcile for the rq-operator
 func rqReconcile(r *ReconcileRqcluster, request reconcile.Request, instance *rqclusterv1alpha1.Rqcluster) error {
 
-	log.Info("jeff Reconciling Rqcluster")
+	log.Info("Reconciling Rqcluster")
 
 	podList, err := getPods(r, request.Namespace, instance.Name)
 	if err != nil {
@@ -45,9 +41,10 @@ func rqReconcile(r *ReconcileRqcluster, request reconcile.Request, instance *rqc
 			if err != nil {
 				return err
 			}
-			//a not so great way to let the leader get started
-			//before creating the followers
-			time.Sleep(time.Duration(4) * time.Second)
+
+			// Delay a bit to let the leader start before
+			// the followers
+			time.Sleep(time.Duration(2) * time.Second)
 
 			podCount += 1
 		}
@@ -62,7 +59,6 @@ func rqReconcile(r *ReconcileRqcluster, request reconcile.Request, instance *rqc
 	}
 
 	// at this point, the cluster's pods should exist
-
 	return updateStatus(podList.Items, r, instance)
 }
 

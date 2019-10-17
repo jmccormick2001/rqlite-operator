@@ -13,7 +13,6 @@ import (
 
 	rqclusterv1alpha1 "github.com/jmccormick2001/rq/pkg/apis/rqcluster/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
-	//	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"text/template"
 )
 
@@ -76,7 +75,7 @@ func newPodForCRFromTemplate(joinAddress string, cr *rqclusterv1alpha1.Rqcluster
 	var podBuffer bytes.Buffer
 	templates.PodTemplate.Execute(&podBuffer, myPodInfo)
 
-	fmt.Println("podBuffer is %s\n", podBuffer.String())
+	log.Info("podBuffer is ", podBuffer.String())
 	err = json.Unmarshal(podBuffer.Bytes(), &pod)
 	pod.ObjectMeta.Namespace = cr.Namespace
 	return &pod, nil
@@ -129,7 +128,7 @@ func createService(mySvcInfo ServiceFields, cr *rqclusterv1alpha1.Rqcluster, cli
 	var svcBuffer bytes.Buffer
 	templates.ServiceTemplate.Execute(&svcBuffer, mySvcInfo)
 
-	fmt.Printf("jeff svcBuffer is %s\n", svcBuffer.String())
+	log.Info("svcBuffer is ", svcBuffer.String())
 	err = json.Unmarshal(svcBuffer.Bytes(), &svc)
 	svc.ObjectMeta.Namespace = cr.Namespace
 	return &svc, nil
