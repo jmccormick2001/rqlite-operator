@@ -11,7 +11,7 @@ As a cluster-admin run the following:
     kubectl create namespace rqnamespace
     make setup-as-cluster-admin
 
-As a normal user run the following:
+As a normal user (or cluster-admin) run the following:
 
     make setup
 
