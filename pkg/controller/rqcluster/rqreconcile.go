@@ -17,8 +17,9 @@ import (
 
 // rqReconcile implements the Reconcile for the rq-operator
 func rqReconcile(r *ReconcileRqcluster, request reconcile.Request, instance *rqclusterv1alpha1.Rqcluster) error {
+	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 
-	log.Info("Reconciling Rqcluster")
+	reqLogger.Info("rqReconcile called")
 
 	podList, err := getPods(r, request.Namespace, instance.Name)
 	if err != nil {
@@ -32,6 +33,7 @@ func rqReconcile(r *ReconcileRqcluster, request reconcile.Request, instance *rqc
 
 	requestedPodCount := int(instance.Spec.Size)
 	podCount := len(podList.Items)
+
 	if podCount != requestedPodCount {
 
 		//handle the case of a new cluster, we need a leader
@@ -56,6 +58,20 @@ func rqReconcile(r *ReconcileRqcluster, request reconcile.Request, instance *rqc
 				return err
 			}
 		}
+
+		// check for the case where a leader pod has been removed
+		leaderPod, err := getLeaderPod(r, request.Namespace, instance.Name)
+		if err != nil {
+			return err
+		}
+		if leaderPod == nil {
+			reqLogger.Info("would need to see who the new leader is here")
+			err := labelNewLeader(r, instance)
+			if err != nil {
+				return err
+			}
+		}
+
 	}
 
 	// at this point, the cluster's pods should exist
@@ -64,18 +80,45 @@ func rqReconcile(r *ReconcileRqcluster, request reconcile.Request, instance *rqc
 
 // getPods returns the list of pods for a given namespace and instance
 func getPods(r *ReconcileRqcluster, requestNamespace, instanceName string) (*corev1.PodList, error) {
+	reqLogger := log.WithValues("Request.Namespace", requestNamespace, "Request.Name", instanceName)
+
 	podList := &corev1.PodList{}
 	err := r.client.List(context.TODO(), podList, client.InNamespace(requestNamespace), client.MatchingLabels{"cluster": instanceName})
 	if err != nil {
-		log.Error(err, "unable to find any pods that match this request")
+		reqLogger.Info("unable to find any pods that match this request: " + err.Error())
 		return podList, err
 	}
 
 	return podList, nil
 }
 
-func createClusterPod(leader bool, r *ReconcileRqcluster, instance *rqclusterv1alpha1.Rqcluster) error {
+// getLeaderPod returns the leader pod for a given namespace and instance
+func getLeaderPod(r *ReconcileRqcluster, requestNamespace, instanceName string) (*corev1.Pod, error) {
+	reqLogger := log.WithValues("Request.Namespace", requestNamespace, "Request.Name", instanceName)
+	reqLogger.Info("getLeaderPod called")
+	podList := &corev1.PodList{}
+	err := r.client.List(context.TODO(), podList, client.InNamespace(requestNamespace), client.MatchingLabels{"cluster": instanceName, "leader": "true"})
+	if err != nil {
+		log.Info("error in looking for leader pod: " + err.Error())
+		fmt.Println("error in looking for leader pod here")
+		return nil, err
+	}
 
+	if len(podList.Items) != 1 {
+		fmt.Println("unable to find a leader pod here")
+		log.Info("unable to find leader pod that match this request ")
+		return nil, nil
+	}
+
+	fmt.Println("found a leader pod here")
+	log.Info("found leader pod that matches this request")
+	return &podList.Items[0], nil
+}
+
+func createClusterPod(leader bool, r *ReconcileRqcluster, instance *rqclusterv1alpha1.Rqcluster) error {
+	reqLogger := log.WithValues("Request.Namespace", instance.Namespace, "Request.Name", instance.Name)
+
+	reqLogger.Info("createClusterPod called")
 	var joinAddress string
 	if !leader {
 		joinAddress = fmt.Sprintf("--join http://%s-leader:4001", instance.Name)
@@ -115,7 +158,7 @@ func createClusterPod(leader bool, r *ReconcileRqcluster, instance *rqclusterv1a
 	found := &corev1.Pod{}
 	err = r.client.Get(context.TODO(), types.NamespacedName{Name: mypod.Name, Namespace: mypod.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
-		log.Info("Creating a new Pod", "Pod.Namespace", mypod.Namespace, "Pod.Name", mypod.Name, "Namespace", mypod.ObjectMeta.Namespace)
+		reqLogger.Info("Creating a new Pod", "Pod.Namespace", mypod.Namespace, "Pod.Name", mypod.Name, "Namespace", mypod.ObjectMeta.Namespace)
 		if leader {
 			mypod.ObjectMeta.Labels["leader"] = "true"
 		}
@@ -137,39 +180,69 @@ func createClusterPod(leader bool, r *ReconcileRqcluster, instance *rqclusterv1a
 // a service for the cluster leader
 // a service that will select on all pods in the cluster
 func verifyServices(r *ReconcileRqcluster, instance *rqclusterv1alpha1.Rqcluster) error {
+	reqLogger := log.WithValues("Request.Namespace", instance.Namespace, "Request.Name", instance.Name)
 
 	// Check if the leader service already exists
-	leaderStatus := []bool{true, false}
-	for _, v := range leaderStatus {
-		leaderService, err := newServiceForCRFromTemplate(v, instance, r.client)
+	var leaderService *corev1.Service
+	leaderService, err := newServiceForCRFromTemplate(true, instance, r.client)
+	if err != nil {
+		return err
+	}
+
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: leaderService.Name, Namespace: leaderService.Namespace}, leaderService)
+	if err != nil && errors.IsNotFound(err) {
+		reqLogger.Info("Creating a new leader service", "Pod.Namespace", leaderService.Namespace, "Pod.Name", leaderService.Name, "Namespace", leaderService.ObjectMeta.Namespace)
+
+		// Set Rqcluster instance as the owner and controller
+		if err := controllerutil.SetControllerReference(instance, leaderService, r.scheme); err != nil {
+			return err
+		}
+		err = r.client.Create(context.TODO(), leaderService)
 		if err != nil {
 			return err
 		}
-		found := &corev1.Service{}
-		err = r.client.Get(context.TODO(), types.NamespacedName{Name: leaderService.Name, Namespace: leaderService.Namespace}, found)
-		if err != nil && errors.IsNotFound(err) {
-			log.Info("Creating a new leader service", "Pod.Namespace", leaderService.Namespace, "Pod.Name", leaderService.Name, "Namespace", leaderService.ObjectMeta.Namespace)
 
-			// Set Rqcluster instance as the owner and controller
-			if err := controllerutil.SetControllerReference(instance, leaderService, r.scheme); err != nil {
-				return err
-			}
-			err = r.client.Create(context.TODO(), leaderService)
-			if err != nil {
-				return err
-			}
+		// leader Service created successfully - don't requeue
+		return nil
+	} else if err != nil {
+		return err
+	} else {
+		reqLogger.Info("leader service already exists")
+	}
 
-			// leader Service created successfully - don't requeue
-			return nil
-		} else if err != nil {
+	// Check if the rqcluster service already exists
+	var clusterService *corev1.Service
+	clusterService, err = newServiceForCRFromTemplate(false, instance, r.client)
+	if err != nil {
+		return err
+	}
+
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: clusterService.Name, Namespace: clusterService.Namespace}, clusterService)
+	if err != nil && errors.IsNotFound(err) {
+		reqLogger.Info("Creating a new cluster service", "Pod.Namespace", clusterService.Namespace, "Pod.Name", clusterService.Name, "Namespace", clusterService.ObjectMeta.Namespace)
+
+		// Set Rqcluster instance as the owner and controller
+		if err := controllerutil.SetControllerReference(instance, clusterService, r.scheme); err != nil {
 			return err
 		}
+		err = r.client.Create(context.TODO(), clusterService)
+		if err != nil {
+			return err
+		}
+
+		// cluster Service created successfully - don't requeue
+		return nil
+	} else if err != nil {
+		return err
+	} else {
+		reqLogger.Info("cluster service already exists")
 	}
 
 	return nil
 }
 
 func updateStatus(pods []corev1.Pod, r *ReconcileRqcluster, instance *rqclusterv1alpha1.Rqcluster) error {
+	reqLogger := log.WithValues("Request.Namespace", instance.Namespace, "Request.Name", instance.Name)
 	var podNames []string
 	for _, pod := range pods {
 		podNames = append(podNames, pod.Name)
@@ -179,9 +252,17 @@ func updateStatus(pods []corev1.Pod, r *ReconcileRqcluster, instance *rqclusterv
 		instance.Status.Nodes = podNames
 		err := r.client.Status().Update(context.TODO(), instance)
 		if err != nil {
-			log.Error(err, "Failed to update rqcluster status")
+			reqLogger.Info("Failed to update rqcluster status: " + err.Error())
 			return err
 		}
+	}
+	return nil
+
+}
+func labelNewLeader(r *ReconcileRqcluster, instance *rqclusterv1alpha1.Rqcluster) error {
+	reqLogger := log.WithValues("Request.Namespace", instance.Namespace, "Request.Name", instance.Name)
+	for i := 0; i < len(instance.Status.Nodes); i++ {
+		reqLogger.Info("labelNewLeader node [" + instance.Status.Nodes[i] + "]")
 	}
 	return nil
 

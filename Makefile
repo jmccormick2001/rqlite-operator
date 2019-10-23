@@ -10,12 +10,11 @@ configmap:
 		-n rqnamespace
 testit:   
 	kubectl create -f deploy/operator.yaml -n rqnamespace
-	sleep 10
+	sleep 5
 	kubectl create -f deploy/crds/rqcluster.example.com_v1alpha1_rqcluster_cr.yaml -n rqnamespace
-testitdefault:   
-	kubectl create -f deploy/operator.yaml 
-	sleep 10
-	kubectl create -f deploy/crds/rqcluster.example.com_v1alpha1_rqcluster_cr.yaml 
+testitlocal:   
+	export OPERATOR_NAME=rq-operator
+	operator-sdk up local --namespace=rqnamespace
 cleanup:   
 	kubectl delete rqclusters --all -n rqnamespace
 	kubectl delete deploy --all -n rqnamespace
