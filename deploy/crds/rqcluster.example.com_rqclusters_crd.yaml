@@ -31,6 +31,10 @@ spec:
         spec:
           description: RqclusterSpec defines the desired state of Rqcluster
           properties:
+            cpu:
+              type: string
+            memory:
+              type: string
             size:
               description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
                 Important: Run "operator-sdk generate k8s" to regenerate code after
@@ -38,8 +42,13 @@ spec:
                 https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html'
               format: int32
               type: integer
+            storage:
+              type: string
           required:
+          - cpu
+          - memory
           - size
+          - storage
           type: object
         status:
           description: RqclusterStatus defines the observed state of Rqcluster

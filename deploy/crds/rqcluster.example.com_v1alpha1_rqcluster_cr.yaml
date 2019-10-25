@@ -5,5 +5,8 @@ metadata:
 spec:
   # Add fields here
   size: 3
+  memory: '100m'
+  storage: 'standard'
+  cpu: '100'
 status:
   nodes:

@@ -75,8 +75,26 @@ func schema_pkg_apis_rqcluster_v1alpha1_RqclusterSpec(ref common.ReferenceCallba
 							Format:      "int32",
 						},
 					},
+					"cpu": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"memory": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"storage": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
 				},
-				Required: []string{"size"},
+				Required: []string{"size", "cpu", "memory", "storage"},
 			},
 		},
 	}
