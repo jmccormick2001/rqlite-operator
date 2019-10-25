@@ -20,7 +20,7 @@ metadata:
       ]
     capabilities: Basic Install
   name: rq.v0.0.1
-  namespace: placeholder
+  namespace: rqnamespace
 spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
@@ -83,7 +83,7 @@ spec:
                       fieldPath: metadata.name
                 - name: OPERATOR_NAME
                   value: rq
-                image: quay.io/jemccorm/rq-operator:v0.0.1
+                image: quay.io/jemccorm/rqlite-operator:v0.0.1
                 imagePullPolicy: Always
                 name: rq
                 resources: {}

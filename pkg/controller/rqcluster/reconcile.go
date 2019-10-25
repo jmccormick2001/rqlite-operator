@@ -253,7 +253,9 @@ func updateStatus(pods []corev1.Pod, r *ReconcileRqcluster, instance *rqclusterv
 		err := r.client.Status().Update(context.TODO(), instance)
 		if err != nil {
 			reqLogger.Info("Failed to update rqcluster status: " + err.Error())
-			return err
+			//return err
+			// I'm returning nil here per https://github.com/kubernetes-sigs/controller-runtime/issues/403
+			return nil
 		}
 	}
 	return nil

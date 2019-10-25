@@ -15,7 +15,6 @@ spec:
       serviceAccountName: rq
       containers:
         - name: rq
-          # Replace this with the built image name
           image: quay.io/jemccorm/rqlite-operator:v0.0.1
           command:
           - rq
