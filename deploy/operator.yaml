@@ -1,18 +1,18 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: rq
+  name: rqlite-operator
 spec:
   replicas: 1
   selector:
     matchLabels:
-      name: rq
+      name: rqlite-operator
   template:
     metadata:
       labels:
-        name: rq
+        name: rqlite-operator
     spec:
-      serviceAccountName: rq
+      serviceAccountName: rqlite-operator
       containers:
         - name: rq
           image: quay.io/jemccorm/rqlite-operator:v0.0.1
@@ -29,4 +29,4 @@ spec:
                 fieldRef:
                   fieldPath: metadata.name
             - name: OPERATOR_NAME
-              value: "rq"
+              value: "rqlite-operator"
