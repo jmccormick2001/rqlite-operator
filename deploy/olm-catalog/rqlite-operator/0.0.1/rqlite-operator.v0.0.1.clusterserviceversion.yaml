@@ -12,9 +12,9 @@ metadata:
           },
           "spec": {
             "size": 3,
-            "cpu": '100',
-            "memory": '10m',
-            "storage": 'storageos'
+            "cpu": "100",
+            "memory": "10m",
+            "storage": "storageos"
           },
           "status": {
             "nodes": null
