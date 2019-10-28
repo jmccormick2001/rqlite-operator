@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"math/rand"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -40,6 +42,7 @@ type ConfigMapTemplates struct {
 }
 
 // the rqlite pod template is found in the rqoperator ConfigMap
+const containerTemplatePath = "/usr/local/bin/"
 const ConfigMapName = "rq-config"
 const PodTemplateFile = "pod-template.json"
 const ServiceTemplateFile = "service-template.json"
@@ -138,13 +141,26 @@ func getTemplates(namespace string, client client.Client) (ConfigMapTemplates, e
 	templates := ConfigMapTemplates{}
 
 	// lookup the rq configmap
+	configMapFound := true
 	cMap := &corev1.ConfigMap{}
 	err := client.Get(context.TODO(), types.NamespacedName{Name: ConfigMapName, Namespace: namespace}, cMap)
-	if err != nil {
+	if apierrors.IsNotFound(err) {
+		configMapFound = false
+	} else if err != nil {
 		return templates, err
 	}
 
-	value := cMap.Data[PodTemplateFile]
+	var value string
+	if configMapFound {
+		value = cMap.Data[PodTemplateFile]
+	} else {
+		templateData, err := ioutil.ReadFile(containerTemplatePath + PodTemplateFile)
+		if err != nil {
+			return templates, err
+		}
+		value = string(templateData)
+	}
+
 	if value == "" {
 		return templates, err
 	}
@@ -153,7 +169,15 @@ func getTemplates(namespace string, client client.Client) (ConfigMapTemplates, e
 		return templates, errors.New("pod template didnt parse")
 	}
 
-	value = cMap.Data[ServiceTemplateFile]
+	if configMapFound {
+		value = cMap.Data[ServiceTemplateFile]
+	} else {
+		templateData, err := ioutil.ReadFile(containerTemplatePath + ServiceTemplateFile)
+		if err != nil {
+			return templates, err
+		}
+		value = string(templateData)
+	}
 	if value == "" {
 		return templates, err
 	}

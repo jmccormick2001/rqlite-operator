@@ -7,6 +7,7 @@ ENV OPERATOR=/usr/local/bin/rq \
 # install operator binary
 COPY build/_output/bin/rqlite-operator ${OPERATOR}
 
+COPY templates /usr/local/bin
 COPY build/bin /usr/local/bin
 RUN  /usr/local/bin/user_setup
 
