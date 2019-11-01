@@ -13,10 +13,13 @@ type RqclusterSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
-	Size    int32  `json:"size"`
-	Cpu     string `json:"cpu"`
-	Memory  string `json:"memory"`
-	Storage string `json:"storage"`
+	Size          int32  `json:"size"`
+	CpuLimit      string `json:"cpulimit"`
+	CpuRequest    string `json:"cpurequest"`
+	MemoryLimit   string `json:"memorylimit"`
+	MemoryRequest string `json:"memoryrequest"`
+	StorageClass  string `json:"storageclass"`
+	StorageLimit  string `json:"storagelimit"`
 }
 
 // RqclusterStatus defines the observed state of Rqcluster

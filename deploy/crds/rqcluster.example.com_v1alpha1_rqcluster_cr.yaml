@@ -7,6 +7,9 @@ status:
 spec:
   # Add fields here
   size: 3
-  memory: '100m'
-  storage: 'standard'
-  cpu: '100'
+  memorylimit: ''
+  memoryrequest: ''
+  storageclass: 'standard'
+  storagelimit: '1g'
+  cpulimit: ''
+  cpurequest: ''

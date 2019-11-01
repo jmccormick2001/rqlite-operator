@@ -81,6 +81,12 @@ func newPodForCRFromTemplate(joinAddress string, cr *rqclusterv1alpha1.Rqcluster
 	log.Info("podBuffer " + podBuffer.String())
 	err = json.Unmarshal(podBuffer.Bytes(), &pod)
 	pod.ObjectMeta.Namespace = cr.Namespace
+
+	err = setResources(cr, client, &pod)
+	if err != nil {
+		return &pod, err
+	}
+
 	return &pod, nil
 }
 
