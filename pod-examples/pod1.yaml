@@ -4,12 +4,16 @@ metadata:
   labels:
     app: rqleader
   name: rqpod1
-  namespace: default
+  namespace: rqnamespace
 spec:
   containers:
   - name: rqlite
-    image: jmccormick2001/rqlite:v0.0.1
+    image: quay.io/jemccorm/rqlite:v0.0.1
     imagePullPolicy: IfNotPresent
+    resources:
+      requests:
+        cpu: 10m
+        memory: 160Mi
     ports:
     - containerPort: 4001
       name: rqhttps

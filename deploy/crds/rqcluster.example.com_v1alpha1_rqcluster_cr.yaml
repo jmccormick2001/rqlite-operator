@@ -8,8 +8,8 @@ spec:
   # Add fields here
   size: 3
   memorylimit: ''
-  memoryrequest: ''
+  memoryrequest: '160Mi'
   storageclass: 'standard'
   storagelimit: '1g'
   cpulimit: ''
-  cpurequest: ''
+  cpurequest: '10m'
