@@ -11,9 +11,43 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
+		"./pkg/apis/rqcluster/v1alpha1.RqPodAffinity":   schema_pkg_apis_rqcluster_v1alpha1_RqPodAffinity(ref),
 		"./pkg/apis/rqcluster/v1alpha1.Rqcluster":       schema_pkg_apis_rqcluster_v1alpha1_Rqcluster(ref),
 		"./pkg/apis/rqcluster/v1alpha1.RqclusterSpec":   schema_pkg_apis_rqcluster_v1alpha1_RqclusterSpec(ref),
 		"./pkg/apis/rqcluster/v1alpha1.RqclusterStatus": schema_pkg_apis_rqcluster_v1alpha1_RqclusterStatus(ref),
+	}
+}
+
+func schema_pkg_apis_rqcluster_v1alpha1_RqPodAffinity(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "RqPodAffinity defines the pod affinity for an rq cluster with the operator spreading rqcluster nodes across this set of affinity values",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"key": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"values": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Type:   []string{"string"},
+										Format: "",
+									},
+								},
+							},
+						},
+					},
+				},
+				Required: []string{"key", "values"},
+			},
+		},
 	}
 }
 
@@ -111,10 +145,17 @@ func schema_pkg_apis_rqcluster_v1alpha1_RqclusterSpec(ref common.ReferenceCallba
 							Format: "",
 						},
 					},
+					"rqpodaffinity": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("./pkg/apis/rqcluster/v1alpha1.RqPodAffinity"),
+						},
+					},
 				},
-				Required: []string{"size", "cpulimit", "cpurequest", "memorylimit", "memoryrequest", "storageclass", "storagelimit"},
+				Required: []string{"size", "cpulimit", "cpurequest", "memorylimit", "memoryrequest", "storageclass", "storagelimit", "rqpodaffinity"},
 			},
 		},
+		Dependencies: []string{
+			"./pkg/apis/rqcluster/v1alpha1.RqPodAffinity"},
 	}
 }
 

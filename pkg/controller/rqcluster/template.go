@@ -78,7 +78,6 @@ func newPodForCRFromTemplate(joinAddress string, cr *rqclusterv1alpha1.Rqcluster
 	var podBuffer bytes.Buffer
 	templates.PodTemplate.Execute(&podBuffer, myPodInfo)
 
-	log.Info("podBuffer " + podBuffer.String())
 	err = json.Unmarshal(podBuffer.Bytes(), &pod)
 	pod.ObjectMeta.Namespace = cr.Namespace
 
@@ -137,7 +136,6 @@ func createService(mySvcInfo ServiceFields, cr *rqclusterv1alpha1.Rqcluster, cli
 	var svcBuffer bytes.Buffer
 	templates.ServiceTemplate.Execute(&svcBuffer, mySvcInfo)
 
-	//log.Info("svcBuffer " + svcBuffer.String())
 	err = json.Unmarshal(svcBuffer.Bytes(), &svc)
 	svc.ObjectMeta.Namespace = cr.Namespace
 	return &svc, nil

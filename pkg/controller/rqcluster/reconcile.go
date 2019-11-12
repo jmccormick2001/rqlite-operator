@@ -3,12 +3,14 @@ package rqcluster
 import (
 	"context"
 	"fmt"
+	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
 	"time"
 
 	rqclusterv1alpha1 "github.com/jmccormick2001/rq/pkg/apis/rqcluster/v1alpha1"
@@ -21,12 +23,12 @@ func rqReconcile(r *ReconcileRqcluster, request reconcile.Request, instance *rqc
 
 	reqLogger.Info("rqReconcile called")
 
-	podList, err := getPods(r, request.Namespace, instance.Name)
+	podList, err := getPods(reqLogger, r, request.Namespace, instance.Name)
 	if err != nil {
 		return err
 	}
 
-	err = verifyServices(r, instance)
+	err = verifyServices(reqLogger, r, instance)
 	if err != nil {
 		return err
 	}
@@ -39,7 +41,7 @@ func rqReconcile(r *ReconcileRqcluster, request reconcile.Request, instance *rqc
 		//handle the case of a new cluster, we need a leader
 		//pod to be created first before creating the followers
 		if podCount == 0 {
-			err := createClusterPod(true, r, instance)
+			err := createClusterPod(reqLogger, true, r, instance)
 			if err != nil {
 				return err
 			}
@@ -53,20 +55,20 @@ func rqReconcile(r *ReconcileRqcluster, request reconcile.Request, instance *rqc
 
 		podsToCreate := requestedPodCount - podCount
 		for i := 0; i < podsToCreate; i++ {
-			err := createClusterPod(false, r, instance)
+			err := createClusterPod(reqLogger, false, r, instance)
 			if err != nil {
 				return err
 			}
 		}
 
 		// check for the case where a leader pod has been removed
-		leaderPod, err := getLeaderPod(r, request.Namespace, instance.Name)
+		leaderPod, err := getLeaderPod(reqLogger, r, request.Namespace, instance.Name)
 		if err != nil {
 			return err
 		}
 		if leaderPod == nil {
 			reqLogger.Info("would need to see who the new leader is here")
-			err := labelNewLeader(r, instance)
+			err := labelNewLeader(reqLogger, r, instance)
 			if err != nil {
 				return err
 			}
@@ -75,12 +77,12 @@ func rqReconcile(r *ReconcileRqcluster, request reconcile.Request, instance *rqc
 	}
 
 	// at this point, the cluster's pods should exist
-	return updateStatus(podList.Items, r, instance)
+	return updateStatus(reqLogger, podList.Items, r, instance)
 }
 
 // getPods returns the list of pods for a given namespace and instance
-func getPods(r *ReconcileRqcluster, requestNamespace, instanceName string) (*corev1.PodList, error) {
-	reqLogger := log.WithValues("Request.Namespace", requestNamespace, "Request.Name", instanceName)
+func getPods(reqLogger logr.Logger, r *ReconcileRqcluster, requestNamespace, instanceName string) (*corev1.PodList, error) {
+	//reqLogger := log.WithValues("Request.Namespace", requestNamespace, "Request.Name", instanceName)
 
 	podList := &corev1.PodList{}
 	err := r.client.List(context.TODO(), podList, client.InNamespace(requestNamespace), client.MatchingLabels{"cluster": instanceName})
@@ -92,8 +94,8 @@ func getPods(r *ReconcileRqcluster, requestNamespace, instanceName string) (*cor
 	return podList, nil
 }
 
-func createClusterPod(leader bool, r *ReconcileRqcluster, instance *rqclusterv1alpha1.Rqcluster) error {
-	reqLogger := log.WithValues("Request.Namespace", instance.Namespace, "Request.Name", instance.Name)
+func createClusterPod(reqLogger logr.Logger, leader bool, r *ReconcileRqcluster, instance *rqclusterv1alpha1.Rqcluster) error {
+	//reqLogger := log.WithValues("Request.Namespace", instance.Namespace, "Request.Name", instance.Name)
 
 	reqLogger.Info("createClusterPod called")
 	var joinAddress string
@@ -156,8 +158,8 @@ func createClusterPod(leader bool, r *ReconcileRqcluster, instance *rqclusterv1a
 // verifyServices checks to see if there is ...
 // a service for the cluster leader
 // a service that will select on all pods in the cluster
-func verifyServices(r *ReconcileRqcluster, instance *rqclusterv1alpha1.Rqcluster) error {
-	reqLogger := log.WithValues("Request.Namespace", instance.Namespace, "Request.Name", instance.Name)
+func verifyServices(reqLogger logr.Logger, r *ReconcileRqcluster, instance *rqclusterv1alpha1.Rqcluster) error {
+	//reqLogger := log.WithValues("Request.Namespace", instance.Namespace, "Request.Name", instance.Name)
 
 	// Check if the leader service already exists
 	var leaderService *corev1.Service
@@ -218,8 +220,8 @@ func verifyServices(r *ReconcileRqcluster, instance *rqclusterv1alpha1.Rqcluster
 	return nil
 }
 
-func updateStatus(pods []corev1.Pod, r *ReconcileRqcluster, instance *rqclusterv1alpha1.Rqcluster) error {
-	reqLogger := log.WithValues("Request.Namespace", instance.Namespace, "Request.Name", instance.Name)
+func updateStatus(reqLogger logr.Logger, pods []corev1.Pod, r *ReconcileRqcluster, instance *rqclusterv1alpha1.Rqcluster) error {
+	//	reqLogger := log.WithValues("Request.Namespace", instance.Namespace, "Request.Name", instance.Name)
 	var podNames []string
 	for _, pod := range pods {
 		podNames = append(podNames, pod.Name)

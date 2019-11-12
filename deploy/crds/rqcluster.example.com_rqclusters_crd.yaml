@@ -39,6 +39,21 @@ spec:
               type: string
             memoryrequest:
               type: string
+            rqpodaffinity:
+              description: RqPodAffinity defines the pod affinity for an rq cluster
+                with the operator spreading rqcluster nodes across this set of affinity
+                values
+              properties:
+                key:
+                  type: string
+                values:
+                  items:
+                    type: string
+                  type: array
+              required:
+              - key
+              - values
+              type: object
             size:
               description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
                 Important: Run "operator-sdk generate k8s" to regenerate code after
@@ -55,6 +70,7 @@ spec:
           - cpurequest
           - memorylimit
           - memoryrequest
+          - rqpodaffinity
           - size
           - storageclass
           - storagelimit
