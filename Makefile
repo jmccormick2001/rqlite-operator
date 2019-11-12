@@ -20,6 +20,7 @@ cleanup:
 	kubectl delete deploy --all -n rqnamespace
 operatorimage:   
 	operator-sdk build quay.io/jemccorm/rqlite-operator:v0.0.1
+pushoperatorimage:   
 	docker push quay.io/jemccorm/rqlite-operator:v0.0.1
 olmuninstall:   
 	kubectl -n rqnamespace delete csv rqlite-operator.v0.0.1 --ignore-not-found

@@ -92,29 +92,6 @@ func getPods(r *ReconcileRqcluster, requestNamespace, instanceName string) (*cor
 	return podList, nil
 }
 
-// getLeaderPod returns the leader pod for a given namespace and instance
-func getLeaderPod(r *ReconcileRqcluster, requestNamespace, instanceName string) (*corev1.Pod, error) {
-	reqLogger := log.WithValues("Request.Namespace", requestNamespace, "Request.Name", instanceName)
-	reqLogger.Info("getLeaderPod called")
-	podList := &corev1.PodList{}
-	err := r.client.List(context.TODO(), podList, client.InNamespace(requestNamespace), client.MatchingLabels{"cluster": instanceName, "leader": "true"})
-	if err != nil {
-		log.Info("error in looking for leader pod: " + err.Error())
-		fmt.Println("error in looking for leader pod here")
-		return nil, err
-	}
-
-	if len(podList.Items) != 1 {
-		fmt.Println("unable to find a leader pod here")
-		log.Info("unable to find leader pod that match this request ")
-		return nil, nil
-	}
-
-	fmt.Println("found a leader pod here")
-	log.Info("found leader pod that matches this request")
-	return &podList.Items[0], nil
-}
-
 func createClusterPod(leader bool, r *ReconcileRqcluster, instance *rqclusterv1alpha1.Rqcluster) error {
 	reqLogger := log.WithValues("Request.Namespace", instance.Namespace, "Request.Name", instance.Name)
 
@@ -261,14 +238,6 @@ func updateStatus(pods []corev1.Pod, r *ReconcileRqcluster, instance *rqclusterv
 
 			return nil
 		}
-	}
-	return nil
-
-}
-func labelNewLeader(r *ReconcileRqcluster, instance *rqclusterv1alpha1.Rqcluster) error {
-	reqLogger := log.WithValues("Request.Namespace", instance.Namespace, "Request.Name", instance.Name)
-	for i := 0; i < len(instance.Status.Nodes); i++ {
-		reqLogger.Info("labelNewLeader node [" + instance.Status.Nodes[i] + "]")
 	}
 	return nil
 
