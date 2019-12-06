@@ -6,6 +6,11 @@ status:
   nodes: 
 spec:
   # Add fields here
+  rqpodaffinity: 
+    key: 'nodename'
+    values: 
+      - 'a'
+      - 'b'
   size: 3
   memorylimit: ''
   memoryrequest: '160Mi'

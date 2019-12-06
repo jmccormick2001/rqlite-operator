@@ -18,6 +18,11 @@ testitlocal:
 cleanup:   
 	kubectl delete rqclusters --all -n rqnamespace
 	kubectl delete deploy --all -n rqnamespace
+setup:
+	kubectl create -n rqnamespace -f deploy/crds/rqcluster.example.com_rqclusters_crd.yaml
+	kubectl create -n rqnamespace -f deploy/service_account.yaml
+	kubectl create -n rqnamespace -f deploy/role.yaml
+	kubectl create -n rqnamespace -f deploy/role_binding.yaml
 operatorimage:   
 	operator-sdk build quay.io/jemccorm/rqlite-operator:v0.0.1
 pushoperatorimage:   

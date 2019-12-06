@@ -77,7 +77,7 @@ func rqReconcile(r *ReconcileRqcluster, request reconcile.Request, instance *rqc
 	}
 
 	// at this point, the cluster's pods should exist
-	return updateStatus(reqLogger, podList.Items, r, instance)
+	return updateStatus(reqLogger, r, instance)
 }
 
 // getPods returns the list of pods for a given namespace and instance
@@ -220,25 +220,33 @@ func verifyServices(reqLogger logr.Logger, r *ReconcileRqcluster, instance *rqcl
 	return nil
 }
 
-func updateStatus(reqLogger logr.Logger, pods []corev1.Pod, r *ReconcileRqcluster, instance *rqclusterv1alpha1.Rqcluster) error {
-	//	reqLogger := log.WithValues("Request.Namespace", instance.Namespace, "Request.Name", instance.Name)
-	var podNames []string
-	for _, pod := range pods {
-		podNames = append(podNames, pod.Name)
-	}
-	// Update status.Nodes if needed
-	if !reflect.DeepEqual(podNames, instance.Status.Nodes) {
-		instance.Status.Nodes = podNames
-		err := r.client.Status().Update(context.TODO(), instance)
-		if err != nil {
-			reqLogger.Info("Failed to update rqcluster status: " + err.Error())
-			//return err
-			// I'm returning nil here per https://github.com/kubernetes-sigs/controller-runtime/issues/403
-			if errors.IsConflict(err) {
-				reqLogger.Info("conflict error raised in status update: " + err.Error())
-			}
+func updateStatus(reqLogger logr.Logger, r *ReconcileRqcluster, instance *rqclusterv1alpha1.Rqcluster) error {
 
-			return nil
+	for retries := 0; retries < 10; retries++ {
+		pods, err := getPods(reqLogger, r, instance.Namespace, instance.Name)
+		if err != nil {
+			return err
+		}
+
+		var podNames []string
+		for _, pod := range pods.Items {
+			podNames = append(podNames, pod.Name)
+		}
+		// Update status.Nodes if needed
+		if !reflect.DeepEqual(podNames, instance.Status.Nodes) {
+			instance.Status.Nodes = podNames
+			err := r.client.Status().Update(context.TODO(), instance)
+			if err != nil {
+				reqLogger.Info("Failed to update rqcluster status: " + err.Error())
+				//return err
+				// I'm returning nil here per https://github.com/kubernetes-sigs/controller-runtime/issues/403
+				if errors.IsConflict(err) {
+					reqLogger.Info("conflict error raised in status update: " + err.Error())
+					//retry if we get a update conflict
+					continue
+				}
+				return nil
+			}
 		}
 	}
 	return nil
