@@ -10,6 +10,7 @@ configmap:
 		-n rqnamespace
 testit:   
 	kubectl create -f deploy/operator.yaml -n rqnamespace
+	kubectl create -f deploy/operator2.yaml -n rqnamespace
 	sleep 5
 	kubectl create -f deploy/crds/rqcluster.example.com_v1alpha1_rqcluster_cr.yaml -n rqnamespace
 testitlocal:   

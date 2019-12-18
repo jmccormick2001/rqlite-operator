@@ -5,14 +5,15 @@ require (
 	github.com/go-logr/logr v0.1.0
 	github.com/go-openapi/spec v0.17.2
 	github.com/operator-framework/operator-sdk v0.0.0-20191004014855-dc713e4d7890
-	github.com/spf13/pflag v1.0.3
+	github.com/spf13/pflag v1.0.5
 	go.uber.org/zap v1.10.0
-	gopkg.in/yaml.v2 v2.2.2
+	gopkg.in/yaml.v2 v2.2.5
 	k8s.io/api v0.0.0-20190918155943-95b840bb6a1f
-	k8s.io/apimachinery v0.0.0-20190913080033-27d36303b655
+	k8s.io/apimachinery v0.0.0-20191028221656-72ed19daf4bb
 	k8s.io/client-go v11.0.1-0.20190409021438-1a26190bd76a+incompatible
 	k8s.io/kube-openapi v0.0.0-20190603182131-db7b694dc208
 	sigs.k8s.io/controller-runtime v0.2.0
+	sigs.k8s.io/kind v0.6.1 // indirect
 )
 
 // Pinned to kubernetes-1.14.1

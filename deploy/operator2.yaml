@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rqlite-operator2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: rqlite-operator2
+  template:
+    metadata:
+      labels:
+        name: rqlite-operator2
+    spec:
+      serviceAccountName: rqlite-operator
+      containers:
+        - name: rq
+          image: quay.io/jemccorm/rqlite-operator:v0.0.1
+          command:
+          - rq
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: WATCH_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: OPERATOR_NAME
+              value: "rqlite-operator"
