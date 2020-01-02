@@ -8,7 +8,6 @@ configmap:
 	kubectl create configmap rq-config \
 		--from-file=./templates/pod-template.json \
 		--from-file=./templates/service-template.json \
-		--from-file=./templates/pvc-template.json \
 		-n $(NS)
 testit:   
 	@echo $(NS) is the namespace

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -50,7 +51,6 @@ type ServiceFields struct {
 type ConfigMapTemplates struct {
 	ServiceTemplate *template.Template
 	PodTemplate     *template.Template
-	PVCTemplate     *template.Template
 }
 
 // the rqlite pod template is found in the rqoperator ConfigMap
@@ -58,7 +58,6 @@ const containerTemplatePath = "/usr/local/bin/"
 const ConfigMapName = "rq-config"
 const PodTemplateFile = "pod-template.json"
 const ServiceTemplateFile = "service-template.json"
-const PVCTemplateFile = "pvc-template.json"
 
 const ServiceAccountName = "default"
 const letterBytes = "abcdefghijklmnopqrstuvwxyz"
@@ -119,6 +118,7 @@ func newServiceForPod(podName string, cr *rqclusterv1alpha1.Rqcluster, client cl
 // newPVCForPod
 func newPVCForPod(podName string, cr *rqclusterv1alpha1.Rqcluster, client client.Client) (*corev1.PersistentVolumeClaim, error) {
 
+	// set some sane defaults, we only work with storage classes
 	myPVCInfo := PVCFields{
 		ClaimName:        podName,
 		AccessMode:       "ReadWriteOnce",
@@ -172,17 +172,30 @@ func createPVC(myPVCInfo PVCFields, cr *rqclusterv1alpha1.Rqcluster, client clie
 
 	pvc := corev1.PersistentVolumeClaim{}
 
-	templates, err := getTemplates(cr.Namespace, client)
-	if err != nil {
-		return &pvc, err
+	pvc.ObjectMeta.Name = myPVCInfo.ClaimName
+	pvc.Spec.VolumeName = myPVCInfo.ClaimName
+	pvc.Spec.AccessModes = make([]corev1.PersistentVolumeAccessMode, 1)
+	switch myPVCInfo.AccessMode {
+	case string(corev1.ReadWriteOnce):
+		pvc.Spec.AccessModes[0] = corev1.ReadWriteOnce
+	case string(corev1.ReadOnlyMany):
+		pvc.Spec.AccessModes[0] = corev1.ReadOnlyMany
+	case string(corev1.ReadWriteMany):
+		pvc.Spec.AccessModes[0] = corev1.ReadWriteMany
+	default:
+		return nil, fmt.Errorf("invalid AccessMode specified in CR")
 	}
-
-	var pvcBuffer bytes.Buffer
-	templates.PVCTemplate.Execute(&pvcBuffer, myPVCInfo)
-
-	fmt.Printf("%s\n", pvcBuffer.String())
-	err = json.Unmarshal(pvcBuffer.Bytes(), &pvc)
+	rs := corev1.ResourceRequirements{}
+	rs.Requests = corev1.ResourceList{}
+	q, err := resource.ParseQuantity(myPVCInfo.StorageCapacity)
+	if err != nil {
+		return nil, err
+	}
+	rs.Requests[corev1.ResourceStorage] = q
+	pvc.Spec.Resources = rs
+	pvc.Spec.StorageClassName = &myPVCInfo.StorageClassName
 	pvc.ObjectMeta.Namespace = cr.Namespace
+
 	return &pvc, nil
 }
 
@@ -233,20 +246,6 @@ func getTemplates(namespace string, client client.Client) (ConfigMapTemplates, e
 	templates.ServiceTemplate = template.Must(template.New("servicetemplate").Parse(value))
 	if templates.ServiceTemplate == nil {
 		return templates, errors.New("service template didnt parse")
-	}
-
-	if configMapFound {
-		value = cMap.Data[PVCTemplateFile]
-	} else {
-		templateData, err := ioutil.ReadFile(containerTemplatePath + PVCTemplateFile)
-		if err != nil {
-			return templates, err
-		}
-		value = string(templateData)
-	}
-	templates.PVCTemplate = template.Must(template.New("pvctemplate").Parse(value))
-	if templates.PVCTemplate == nil {
-		return templates, errors.New("PVC template didnt parse")
 	}
 
 	return templates, nil
