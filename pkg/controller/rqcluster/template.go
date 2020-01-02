@@ -7,16 +7,27 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
+	"time"
+
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
-	"math/rand"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"time"
+
+	"text/template"
 
 	rqclusterv1alpha1 "github.com/jmccormick2001/rq/pkg/apis/rqcluster/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
-	"text/template"
 )
+
+// PVC template fields
+type PVCFields struct {
+	Namespace        string
+	ClaimName        string
+	AccessMode       string
+	StorageCapacity  string
+	StorageClassName string
+}
 
 // rqlite pod template fields
 type PodFields struct {
@@ -39,6 +50,7 @@ type ServiceFields struct {
 type ConfigMapTemplates struct {
 	ServiceTemplate *template.Template
 	PodTemplate     *template.Template
+	PVCTemplate     *template.Template
 }
 
 // the rqlite pod template is found in the rqoperator ConfigMap
@@ -46,6 +58,7 @@ const containerTemplatePath = "/usr/local/bin/"
 const ConfigMapName = "rq-config"
 const PodTemplateFile = "pod-template.json"
 const ServiceTemplateFile = "service-template.json"
+const PVCTemplateFile = "pvc-template.json"
 
 const ServiceAccountName = "default"
 const letterBytes = "abcdefghijklmnopqrstuvwxyz"
@@ -103,6 +116,20 @@ func newServiceForPod(podName string, cr *rqclusterv1alpha1.Rqcluster, client cl
 	return createService(mySvcInfo, cr, client)
 }
 
+// newPVCForPod
+func newPVCForPod(podName string, cr *rqclusterv1alpha1.Rqcluster, client client.Client) (*corev1.PersistentVolumeClaim, error) {
+
+	myPVCInfo := PVCFields{
+		ClaimName:        podName,
+		AccessMode:       "ReadWriteOnce",
+		Namespace:        cr.Namespace,
+		StorageCapacity:  "10Mi",
+		StorageClassName: "my-local-storage",
+	}
+
+	return createPVC(myPVCInfo, cr, client)
+}
+
 // newServiceForCR returns a rqlite service with the same name/namespace as the cr
 func newServiceForCRFromTemplate(leader bool, cr *rqclusterv1alpha1.Rqcluster, client client.Client) (*corev1.Service, error) {
 
@@ -139,6 +166,24 @@ func createService(mySvcInfo ServiceFields, cr *rqclusterv1alpha1.Rqcluster, cli
 	err = json.Unmarshal(svcBuffer.Bytes(), &svc)
 	svc.ObjectMeta.Namespace = cr.Namespace
 	return &svc, nil
+}
+
+func createPVC(myPVCInfo PVCFields, cr *rqclusterv1alpha1.Rqcluster, client client.Client) (*corev1.PersistentVolumeClaim, error) {
+
+	pvc := corev1.PersistentVolumeClaim{}
+
+	templates, err := getTemplates(cr.Namespace, client)
+	if err != nil {
+		return &pvc, err
+	}
+
+	var pvcBuffer bytes.Buffer
+	templates.PVCTemplate.Execute(&pvcBuffer, myPVCInfo)
+
+	fmt.Printf("%s\n", pvcBuffer.String())
+	err = json.Unmarshal(pvcBuffer.Bytes(), &pvc)
+	pvc.ObjectMeta.Namespace = cr.Namespace
+	return &pvc, nil
 }
 
 func getTemplates(namespace string, client client.Client) (ConfigMapTemplates, error) {
@@ -188,6 +233,20 @@ func getTemplates(namespace string, client client.Client) (ConfigMapTemplates, e
 	templates.ServiceTemplate = template.Must(template.New("servicetemplate").Parse(value))
 	if templates.ServiceTemplate == nil {
 		return templates, errors.New("service template didnt parse")
+	}
+
+	if configMapFound {
+		value = cMap.Data[PVCTemplateFile]
+	} else {
+		templateData, err := ioutil.ReadFile(containerTemplatePath + PVCTemplateFile)
+		if err != nil {
+			return templates, err
+		}
+		value = string(templateData)
+	}
+	templates.PVCTemplate = template.Must(template.New("pvctemplate").Parse(value))
+	if templates.PVCTemplate == nil {
+		return templates, errors.New("PVC template didnt parse")
 	}
 
 	return templates, nil

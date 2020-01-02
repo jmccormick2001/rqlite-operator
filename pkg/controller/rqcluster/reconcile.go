@@ -3,10 +3,11 @@ package rqcluster
 import (
 	"context"
 	"fmt"
+	"reflect"
+
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
-	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -97,7 +98,7 @@ func getPods(reqLogger logr.Logger, r *ReconcileRqcluster, requestNamespace, ins
 func createClusterPod(reqLogger logr.Logger, leader bool, r *ReconcileRqcluster, instance *rqclusterv1alpha1.Rqcluster) error {
 	//reqLogger := log.WithValues("Request.Namespace", instance.Namespace, "Request.Name", instance.Name)
 
-	reqLogger.Info("createClusterPod called")
+	reqLogger.Info("createClusterPod called jeff")
 	var joinAddress string
 	if !leader {
 		joinAddress = fmt.Sprintf("--join http://%s-leader:4001", instance.Name)
@@ -142,6 +143,25 @@ func createClusterPod(reqLogger logr.Logger, leader bool, r *ReconcileRqcluster,
 			mypod.ObjectMeta.Labels["leader"] = "true"
 		}
 		err = r.client.Create(context.TODO(), mypod)
+		if err != nil {
+			return err
+		}
+
+		// Create a PVC for the new pod
+		reqLogger.Info("Creating a new PVC", "Pod.Namespace", mypod.Namespace, "Pod.Name", mypod.Name, "Namespace", mypod.ObjectMeta.Namespace)
+		var mypvc *corev1.PersistentVolumeClaim
+		mypvc, err = newPVCForPod(mypod.Name, instance, r.client)
+		if err != nil {
+			reqLogger.Info("Error creating a new PVC", "Pod.Namespace", mypod.Namespace, "Pod.Name", mypod.Name)
+			return err
+		}
+
+		// Set pod instance as the owner of the PVC
+		if err := controllerutil.SetControllerReference(mypod, mypvc, r.scheme); err != nil {
+			return err
+		}
+
+		err = r.client.Create(context.TODO(), mypvc)
 		if err != nil {
 			return err
 		}

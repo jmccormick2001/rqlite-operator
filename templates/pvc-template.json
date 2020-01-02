@@ -1,0 +1,19 @@
+{
+    "apiVersion": "v1",
+    "kind": "PersistentVolumeClaim",
+    "metadata": {
+        "name": "{{.ClaimName}}",
+        "namespace": "{{.Namespace}}"
+    },
+    "spec": {
+        "accessModes": [
+            "{{.AccessMode}}"
+        ],
+        "resources": {
+            "requests": {
+                "storage": "{{.StorageCapacity}}"
+            }
+        },
+        "storageClassName": "{{.StorageClassName}}"
+    }
+}
