@@ -138,14 +138,6 @@ func createClusterPod(reqLogger logr.Logger, leader bool, r *ReconcileRqcluster,
 	found := &corev1.Pod{}
 	err = r.client.Get(context.TODO(), types.NamespacedName{Name: mypod.Name, Namespace: mypod.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
-		reqLogger.Info("Creating a new Pod", "Pod.Namespace", mypod.Namespace, "Pod.Name", mypod.Name, "Namespace", mypod.ObjectMeta.Namespace)
-		if leader {
-			mypod.ObjectMeta.Labels["leader"] = "true"
-		}
-		err = r.client.Create(context.TODO(), mypod)
-		if err != nil {
-			return err
-		}
 
 		// Create a PVC for the new pod
 		reqLogger.Info("Creating a new PVC", "Pod.Namespace", mypod.Namespace, "Pod.Name", mypod.Name, "Namespace", mypod.ObjectMeta.Namespace)
@@ -156,13 +148,22 @@ func createClusterPod(reqLogger logr.Logger, leader bool, r *ReconcileRqcluster,
 			return err
 		}
 
-		// Set pod instance as the owner of the PVC
-		if err := controllerutil.SetControllerReference(mypod, mypvc, r.scheme); err != nil {
+		err = r.client.Create(context.TODO(), mypvc)
+		if err != nil {
 			return err
 		}
 
-		err = r.client.Create(context.TODO(), mypvc)
+		reqLogger.Info("Creating a new Pod", "Pod.Namespace", mypod.Namespace, "Pod.Name", mypod.Name, "Namespace", mypod.ObjectMeta.Namespace)
+		if leader {
+			mypod.ObjectMeta.Labels["leader"] = "true"
+		}
+		err = r.client.Create(context.TODO(), mypod)
 		if err != nil {
+			return err
+		}
+
+		// Set pod instance as the owner of the PVC
+		if err := controllerutil.SetControllerReference(mypod, mypvc, r.scheme); err != nil {
 			return err
 		}
 

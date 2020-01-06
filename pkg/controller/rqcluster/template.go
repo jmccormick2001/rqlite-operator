@@ -93,6 +93,20 @@ func newPodForCRFromTemplate(joinAddress string, cr *rqclusterv1alpha1.Rqcluster
 	err = json.Unmarshal(podBuffer.Bytes(), &pod)
 	pod.ObjectMeta.Namespace = cr.Namespace
 
+	if cr.Spec.StorageClass != "" {
+		fmt.Println("jeff here in sc check")
+		if pod.Spec.Volumes[0].Name == "rqlite-storage" {
+			fmt.Println("jeff here in sc check 2")
+			vs := corev1.VolumeSource{}
+			pod.Spec.Volumes[0].VolumeSource = vs
+			pvc := corev1.PersistentVolumeClaimVolumeSource{}
+			pvc.ClaimName = podName
+			vs.PersistentVolumeClaim = &pvc
+			pod.Spec.Volumes[0].VolumeSource = vs
+			fmt.Printf("jeff here in sc check 3 %v\n", pod.Spec.Volumes[0])
+		}
+	}
+
 	err = setResources(cr, client, &pod)
 	if err != nil {
 		return &pod, err
@@ -123,10 +137,9 @@ func newPVCForPod(podName string, cr *rqclusterv1alpha1.Rqcluster, client client
 		ClaimName:        podName,
 		AccessMode:       "ReadWriteOnce",
 		Namespace:        cr.Namespace,
-		StorageCapacity:  "10Mi",
-		StorageClassName: "my-local-storage",
+		StorageCapacity:  cr.Spec.StorageLimit,
+		StorageClassName: cr.Spec.StorageClass,
 	}
-
 	return createPVC(myPVCInfo, cr, client)
 }
 
@@ -173,7 +186,7 @@ func createPVC(myPVCInfo PVCFields, cr *rqclusterv1alpha1.Rqcluster, client clie
 	pvc := corev1.PersistentVolumeClaim{}
 
 	pvc.ObjectMeta.Name = myPVCInfo.ClaimName
-	pvc.Spec.VolumeName = myPVCInfo.ClaimName
+	//pvc.Spec.VolumeName = myPVCInfo.ClaimName
 	pvc.Spec.AccessModes = make([]corev1.PersistentVolumeAccessMode, 1)
 	switch myPVCInfo.AccessMode {
 	case string(corev1.ReadWriteOnce):
@@ -196,6 +209,7 @@ func createPVC(myPVCInfo PVCFields, cr *rqclusterv1alpha1.Rqcluster, client clie
 	pvc.Spec.StorageClassName = &myPVCInfo.StorageClassName
 	pvc.ObjectMeta.Namespace = cr.Namespace
 
+	fmt.Printf("jeff PVC to create is %v\n", pvc)
 	return &pvc, nil
 }
 

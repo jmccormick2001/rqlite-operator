@@ -14,7 +14,7 @@ spec:
   size: 3
   memorylimit: ''
   memoryrequest: '160Mi'
-  storageclass: 'standard'
+  storageclass: 'fast'
   accessmode: 'ReadWriteOnce'
   storagelimit: '10Mi'
   cpulimit: ''
