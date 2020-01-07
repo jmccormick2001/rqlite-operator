@@ -10,6 +10,29 @@
       "namespace": "{{.Namespace}}"
    },
    "spec": {
+        "affinity": {
+            "podAntiAffinity": {
+                "preferredDuringSchedulingIgnoredDuringExecution": [
+                    {
+                        "podAffinityTerm": {
+                            "labelSelector": {
+                                "matchExpressions": [
+                                    {
+                                        "key": "leader",
+                                        "operator": "In",
+                                        "values": [
+                                            "true"
+                                        ]
+                                    }
+                                ]
+                            },
+                            "topologyKey": "kubernetes.io/hostname"
+                        },
+                        "weight": 100
+                    }
+                ]
+            }
+        },
       "containers": [
          {
             "name": "rqlite",
