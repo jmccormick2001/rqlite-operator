@@ -6,9 +6,21 @@ metadata:
   name: rqpod1
   namespace: rqnamespace
 spec:
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+            - key: leader
+              operator: In
+              values:
+              - "true"
+          topologyKey: "kubernetes.io/hostname"
   containers:
   - name: rqlite
-    image: quay.io/jemccorm/rqlite:v0.0.1
+    image: quay.io/jemccorm/rqlite:v0.0.2
     imagePullPolicy: IfNotPresent
     resources:
       requests:

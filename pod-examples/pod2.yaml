@@ -4,11 +4,23 @@ metadata:
   labels:
     app: rqlite
   name: rqpod2
-  namespace: default
+  namespace: rqnamespace
 spec:
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+            - key: leader
+              operator: In
+              values:
+              - "true"
+          topologyKey: "kubernetes.io/hostname"
   containers:
   - name: rqlite
-    image: jmccormick2001/rqlite:v0.0.1
+    image: quay.io/jemccorm/rqlite:v0.0.2
     imagePullPolicy: IfNotPresent
     env:
     - name: JOIN_ADDRESS
