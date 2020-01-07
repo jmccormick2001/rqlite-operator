@@ -10,9 +10,12 @@ import (
 	"math/rand"
 	"time"
 
+	"gopkg.in/yaml.v2"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
+
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"text/template"
@@ -49,15 +52,13 @@ type ServiceFields struct {
 }
 
 type ConfigMapTemplates struct {
-	ServiceTemplate *template.Template
-	PodTemplate     *template.Template
+	PodTemplate *template.Template
 }
 
 // the rqlite pod template is found in the rqoperator ConfigMap
 const containerTemplatePath = "/usr/local/bin/"
 const ConfigMapName = "rq-config"
 const PodTemplateFile = "pod-template.json"
-const ServiceTemplateFile = "service-template.json"
 
 const ServiceAccountName = "default"
 const letterBytes = "abcdefghijklmnopqrstuvwxyz"
@@ -149,7 +150,7 @@ func newServiceForCRFromTemplate(leader bool, cr *rqclusterv1alpha1.Rqcluster, c
 	leaderStatus := ""
 	serviceName := cr.Name
 	if leader {
-		leaderStatus = `"leader":"true",`
+		leaderStatus = "true"
 		serviceName = serviceName + "-leader"
 	}
 
@@ -168,25 +169,42 @@ func createService(mySvcInfo ServiceFields, cr *rqclusterv1alpha1.Rqcluster, cli
 
 	svc := corev1.Service{}
 
-	templates, err := getTemplates(cr.Namespace, client)
-	if err != nil {
-		return &svc, err
-	}
-
-	var svcBuffer bytes.Buffer
-	templates.ServiceTemplate.Execute(&svcBuffer, mySvcInfo)
-
-	err = json.Unmarshal(svcBuffer.Bytes(), &svc)
 	svc.ObjectMeta.Namespace = cr.Namespace
+	svc.ObjectMeta.Name = mySvcInfo.ServiceName
+
+	svc.Spec.Ports = make([]corev1.ServicePort, 1)
+	svc.Spec.Ports[0].Name = "rq"
+	svc.Spec.Ports[0].Port = 4001
+	svc.Spec.Ports[0].Protocol = corev1.ProtocolTCP
+	svc.Spec.Ports[0].TargetPort = intstr.FromInt(4001)
+
+	svc.Spec.Selector = make(map[string]string)
+	svc.Spec.Selector["cluster"] = mySvcInfo.ClusterName
+	svc.Spec.Selector["leader"] = mySvcInfo.LeaderStatus
+
+	svc.Spec.Type = corev1.ServiceTypeClusterIP
+	//svc.Spec.Type = corev1.ServiceTypeNodePort
+	//svc.Spec.Type = corev1.ServiceTypeLoadBalancer
 	return &svc, nil
 }
 
 func createPVC(myPVCInfo PVCFields, cr *rqclusterv1alpha1.Rqcluster, client client.Client) (*corev1.PersistentVolumeClaim, error) {
-
 	pvc := corev1.PersistentVolumeClaim{}
+	/**
+	templates, err := getTemplates(cr.Namespace, client)
+	if err != nil {
+		return &pvc, err
+	}
+
+	var pvcBuffer bytes.Buffer
+	templates.PVCTemplate.Execute(&pvcBuffer, myPVCInfo)
+
+	fmt.Printf("%s\n", pvcBuffer.String())
+	err = json.Unmarshal(pvcBuffer.Bytes(), &pvc)
+	pvc.ObjectMeta.Namespace = cr.Namespace
+	*/
 
 	pvc.ObjectMeta.Name = myPVCInfo.ClaimName
-	//pvc.Spec.VolumeName = myPVCInfo.ClaimName
 	pvc.Spec.AccessModes = make([]corev1.PersistentVolumeAccessMode, 1)
 	switch myPVCInfo.AccessMode {
 	case string(corev1.ReadWriteOnce):
@@ -198,18 +216,26 @@ func createPVC(myPVCInfo PVCFields, cr *rqclusterv1alpha1.Rqcluster, client clie
 	default:
 		return nil, fmt.Errorf("invalid AccessMode specified in CR")
 	}
-	rs := corev1.ResourceRequirements{}
-	rs.Requests = corev1.ResourceList{}
+
+	pvc.Spec.Resources = corev1.ResourceRequirements{}
+	pvc.Spec.Resources.Requests = make(corev1.ResourceList)
 	q, err := resource.ParseQuantity(myPVCInfo.StorageCapacity)
+	//q, err := resource.ParseQuantity("10Mi")
 	if err != nil {
 		return nil, err
 	}
-	rs.Requests[corev1.ResourceStorage] = q
-	pvc.Spec.Resources = rs
+	pvc.Spec.Resources.Requests[corev1.ResourceStorage] = q
+
 	pvc.Spec.StorageClassName = &myPVCInfo.StorageClassName
 	pvc.ObjectMeta.Namespace = cr.Namespace
 
 	fmt.Printf("jeff PVC to create is %v\n", pvc)
+	d, err := yaml.Marshal(pvc)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	fmt.Printf("dump PVC %s\n", string(d))
+
 	return &pvc, nil
 }
 
@@ -245,10 +271,11 @@ func getTemplates(namespace string, client client.Client) (ConfigMapTemplates, e
 		return templates, errors.New("pod template didnt parse")
 	}
 
+	/**
 	if configMapFound {
-		value = cMap.Data[ServiceTemplateFile]
+		value = cMap.Data[PVCTemplateFile]
 	} else {
-		templateData, err := ioutil.ReadFile(containerTemplatePath + ServiceTemplateFile)
+		templateData, err := ioutil.ReadFile(containerTemplatePath + PVCTemplateFile)
 		if err != nil {
 			return templates, err
 		}
@@ -257,10 +284,11 @@ func getTemplates(namespace string, client client.Client) (ConfigMapTemplates, e
 	if value == "" {
 		return templates, err
 	}
-	templates.ServiceTemplate = template.Must(template.New("servicetemplate").Parse(value))
-	if templates.ServiceTemplate == nil {
-		return templates, errors.New("service template didnt parse")
+	templates.PVCTemplate = template.Must(template.New("pvctemplate").Parse(value))
+	if templates.PVCTemplate == nil {
+		return templates, errors.New("PVCservice template didnt parse")
 	}
+	*/
 
 	return templates, nil
 }

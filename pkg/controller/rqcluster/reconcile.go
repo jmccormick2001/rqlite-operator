@@ -7,8 +7,13 @@ import (
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -98,7 +103,7 @@ func getPods(reqLogger logr.Logger, r *ReconcileRqcluster, requestNamespace, ins
 func createClusterPod(reqLogger logr.Logger, leader bool, r *ReconcileRqcluster, instance *rqclusterv1alpha1.Rqcluster) error {
 	//reqLogger := log.WithValues("Request.Namespace", instance.Namespace, "Request.Name", instance.Name)
 
-	reqLogger.Info("createClusterPod called jeff")
+	reqLogger.Info("createClusterPod called")
 	var joinAddress string
 	if !leader {
 		joinAddress = fmt.Sprintf("--join http://%s-leader:4001", instance.Name)
@@ -138,7 +143,6 @@ func createClusterPod(reqLogger logr.Logger, leader bool, r *ReconcileRqcluster,
 	found := &corev1.Pod{}
 	err = r.client.Get(context.TODO(), types.NamespacedName{Name: mypod.Name, Namespace: mypod.Namespace}, found)
 	if err != nil && errors.IsNotFound(err) {
-
 		// Create a PVC for the new pod
 		reqLogger.Info("Creating a new PVC", "Pod.Namespace", mypod.Namespace, "Pod.Name", mypod.Name, "Namespace", mypod.ObjectMeta.Namespace)
 		var mypvc *corev1.PersistentVolumeClaim
@@ -148,6 +152,12 @@ func createClusterPod(reqLogger logr.Logger, leader bool, r *ReconcileRqcluster,
 			return err
 		}
 
+		// Set Rqcluster instance as the owner and controller
+		if err := controllerutil.SetControllerReference(instance, mypvc, r.scheme); err != nil {
+			return err
+		}
+
+		// create the PVC
 		err = r.client.Create(context.TODO(), mypvc)
 		if err != nil {
 			return err
@@ -159,11 +169,6 @@ func createClusterPod(reqLogger logr.Logger, leader bool, r *ReconcileRqcluster,
 		}
 		err = r.client.Create(context.TODO(), mypod)
 		if err != nil {
-			return err
-		}
-
-		// Set pod instance as the owner of the PVC
-		if err := controllerutil.SetControllerReference(mypod, mypvc, r.scheme); err != nil {
 			return err
 		}
 
@@ -270,6 +275,31 @@ func updateStatus(reqLogger logr.Logger, r *ReconcileRqcluster, instance *rqclus
 			}
 		}
 	}
+	return nil
+
+}
+
+func setPodReference(owner, object metav1.Object, scheme *runtime.Scheme) error {
+	ro, ok := owner.(runtime.Object)
+	if !ok {
+		return fmt.Errorf("%T is not a runtime.Object, cannot call SetControllerReference", owner)
+	}
+
+	gvk, err := apiutil.GVKForObject(ro, scheme)
+	if err != nil {
+		return err
+	}
+
+	// Create a new ref
+	ref := *metav1.NewControllerRef(owner, schema.GroupVersionKind{Group: gvk.Group, Version: gvk.Version, Kind: gvk.Kind})
+
+	b := false
+	ref.Controller = &b
+
+	existingRefs := object.GetOwnerReferences()
+	existingRefs = append(existingRefs, ref)
+	object.SetOwnerReferences(existingRefs)
+
 	return nil
 
 }

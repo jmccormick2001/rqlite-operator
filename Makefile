@@ -7,7 +7,6 @@ configmap:
 	kubectl delete configmap rq-config -n $(NS) --ignore-not-found
 	kubectl create configmap rq-config \
 		--from-file=./templates/pod-template.json \
-		--from-file=./templates/service-template.json \
 		-n $(NS)
 testit:   
 	@echo $(NS) is the namespace
