@@ -15,7 +15,7 @@ spec:
       serviceAccountName: rqlite-operator
       containers:
         - name: rq
-          image: quay.io/jemccorm/rqlite-operator:v0.0.1
+          image: quay.io/jemccorm/rqlite-operator:v0.0.2
           command:
           - rq
           imagePullPolicy: IfNotPresent

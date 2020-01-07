@@ -1,8 +1,8 @@
 NS = rqnamespace
 rqliteimage:   
-	sudo --preserve-env buildah bud -f ./rqlite-image/Dockerfile -t jemccorm/rqlite:v0.0.1 ./rqlite-image
-	sudo --preserve-env buildah push --authfile /home/jeffmc/.docker/config.json jemccorm/rqlite:v0.0.1 docker://quay.io/jemccorm/rqlite:v0.0.1
-	docker tag quay.io/jemccorm/rqlite:v0.0.1  jemccorm/rqlite:v0.0.1 
+	sudo --preserve-env buildah bud -f ./rqlite-image/Dockerfile -t quay.io/jemccorm/rqlite:v0.0.2 ./rqlite-image
+	sudo --preserve-env buildah push --authfile /home/jeffmc/.docker/config.json jemccorm/rqlite:v0.0.2 docker://quay.io/jemccorm/rqlite:v0.0.2
+	docker tag quay.io/jemccorm/rqlite:v0.0.2  jemccorm/rqlite:v0.0.2 
 configmap:   
 	kubectl delete configmap rq-config -n $(NS) --ignore-not-found
 	kubectl create configmap rq-config \
@@ -28,9 +28,9 @@ setup:
 	kubectl create -n $(NS) -f deploy/role.yaml
 	kubectl create -n $(NS) -f deploy/role_binding.yaml
 operatorimage:   
-	operator-sdk build quay.io/jemccorm/rqlite-operator:v0.0.1
+	operator-sdk build quay.io/jemccorm/rqlite-operator:v0.0.2
 pushoperatorimage:   
-	docker push quay.io/jemccorm/rqlite-operator:v0.0.1
+	docker push quay.io/jemccorm/rqlite-operator:v0.0.2
 olmuninstall:   
 	kubectl -n $(NS) delete csv rqlite-operator.v0.0.1 --ignore-not-found
 	kubectl -n $(NS) delete operatorgroup rqlite-operator-group --ignore-not-found
