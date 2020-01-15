@@ -1,7 +1,7 @@
 package rqcluster
 
 import (
-	rqclusterv1alpha1 "github.com/jmccormick2001/rq/pkg/apis/rqcluster/v1alpha1"
+	rqclusterv1alpha1 "github.com/jmccormick2001/rqlite-operator/pkg/apis/rqcluster/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"sigs.k8s.io/controller-runtime/pkg/client"

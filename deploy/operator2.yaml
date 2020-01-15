@@ -17,7 +17,7 @@ spec:
         - name: rq
           image: quay.io/jemccorm/rqlite-operator:v0.0.2
           command:
-          - rq
+          - rqlite-operator
           imagePullPolicy: IfNotPresent
           env:
             - name: WATCH_NAMESPACE

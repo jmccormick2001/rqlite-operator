@@ -1,7 +1,7 @@
 package apis
 
 import (
-	"github.com/jmccormick2001/rq/pkg/apis/rqcluster/v1alpha1"
+	"github.com/jmccormick2001/rqlite-operator/pkg/apis/rqcluster/v1alpha1"
 )
 
 func init() {

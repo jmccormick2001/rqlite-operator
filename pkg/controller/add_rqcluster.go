@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"github.com/jmccormick2001/rq/pkg/controller/rqcluster"
+	"github.com/jmccormick2001/rqlite-operator/pkg/controller/rqcluster"
 )
 
 func init() {

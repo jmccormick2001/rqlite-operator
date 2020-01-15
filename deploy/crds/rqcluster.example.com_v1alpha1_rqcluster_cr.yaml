@@ -3,14 +3,9 @@ kind: Rqcluster
 metadata:
   name: example-rqcluster
 status:
-  nodes: 
+  nodes:
 spec:
   # Add fields here
-  rqpodaffinity: 
-    key: 'nodename'
-    values: 
-      - 'a'
-      - 'b'
   size: 3
   memorylimit: ''
   memoryrequest: '160Mi'
@@ -19,3 +14,4 @@ spec:
   storagelimit: '10Mi'
   cpulimit: ''
   cpurequest: '10m'
+

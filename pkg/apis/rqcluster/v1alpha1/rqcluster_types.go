@@ -7,33 +7,21 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// RqPodAffinity defines the pod affinity for an rq cluster
-// with the operator spreading rqcluster nodes across this set of affinity
-// values
-// +k8s:openapi-gen=true
-type RqPodAffinity struct {
-	Key    string   `json:"key"`
-	Values []string `json:"values"`
-}
-
 // RqclusterSpec defines the desired state of Rqcluster
-// +k8s:openapi-gen=true
 type RqclusterSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book-v1.book.kubebuilder.io/beyond_basics/generating_crd.html
-	Size          int32         `json:"size"`
-	CpuLimit      string        `json:"cpulimit"`
-	CpuRequest    string        `json:"cpurequest"`
-	MemoryLimit   string        `json:"memorylimit"`
-	MemoryRequest string        `json:"memoryrequest"`
-	StorageClass  string        `json:"storageclass"`
-	StorageLimit  string        `json:"storagelimit"`
-	PodAffinity   RqPodAffinity `json:"rqpodaffinity"`
+	Size          int32  `json:"size"`
+	CpuLimit      string `json:"cpulimit"`
+	CpuRequest    string `json:"cpurequest"`
+	MemoryLimit   string `json:"memorylimit"`
+	MemoryRequest string `json:"memoryrequest"`
+	StorageClass  string `json:"storageclass"`
+	StorageLimit  string `json:"storagelimit"`
 }
 
 // RqclusterStatus defines the observed state of Rqcluster
-// +k8s:openapi-gen=true
 type RqclusterStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
@@ -44,7 +32,6 @@ type RqclusterStatus struct {
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // Rqcluster is the Schema for the rqclusters API
-// +k8s:openapi-gen=true
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:path=rqclusters,scope=Namespaced
 type Rqcluster struct {
