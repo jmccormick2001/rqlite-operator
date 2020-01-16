@@ -25,5 +25,7 @@ $ kubectl -n rq get deployment
 $ kubectl -n rq get pod
 ```
 
+{% page-ref page="building-from-source.md" %}
+
 
 
