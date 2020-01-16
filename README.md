@@ -1,5 +1,5 @@
 ---
-description: Usage and Installation
+description: A Kubernetes operator for the rqlite database.
 ---
 
 # rqlite-operator
