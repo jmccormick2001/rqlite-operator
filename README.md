@@ -14,9 +14,7 @@ $ make install
 $ make test
 ```
 
-{% hint style="info" %}
  This example above assumes you have a working k8s cluster available and you are running as a cluster-admin user.
-{% endhint %}
 
 Verify the rqlite-operator is running and a sample rqlite deployment of 3 nodes is running:
 
@@ -24,10 +22,5 @@ Verify the rqlite-operator is running and a sample rqlite deployment of 3 nodes 
 $ kubectl -n rq get deployment
 $ kubectl -n rq get pod
 ```
-
-{% page-ref page="docs/building-from-source.md" %}
-
-test
-
 
 
