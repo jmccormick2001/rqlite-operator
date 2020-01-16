@@ -4,26 +4,26 @@ description: A Kubernetes operator for the rqlite database.
 
 # rqlite-operator
 
-## Getting Super Powers
+## Getting Started
 
-Becoming a super hero is a fairly straight forward process:
+You can install the rqlite-operator as follows:
 
 ```
-$ give me super-powers
+$ make setup
+$ make install
+$ make test
 ```
 
 {% hint style="info" %}
- Super-powers are granted randomly so please submit an issue if you're not happy with yours.
+ This example above assumes you have a working k8s cluster available and you are running as a cluster-admin user.
 {% endhint %}
 
-Once you're strong enough, save the world:
+Verify the rqlite-operator is running and a sample rqlite deployment of 3 nodes is running:
 
-{% code title="hello.sh" %}
-```bash
-# Ain't no code for that yet, sorry
-echo 'You got to trust me on this, I saved the world'
+```text
+$ kubectl -n rq get deployment
+$ kubectl -n rq get pod
 ```
-{% endcode %}
 
 
 
