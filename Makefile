@@ -2,13 +2,7 @@ NS = rq
 rqliteimage:   
 	sudo --preserve-env buildah bud -f ./rqlite-image/Dockerfile -t quay.io/jemccorm/rqlite:v0.0.2 ./rqlite-image
 	sudo --preserve-env buildah push --authfile /home/jeffmc/.docker/config.json jemccorm/rqlite:v0.0.2 docker://quay.io/jemccorm/rqlite:v0.0.2
-	#docker tag quay.io/jemccorm/rqlite:v0.0.2  jemccorm/rqlite:v0.0.2 
-configmap:   
-	kubectl delete configmap rq-config -n $(NS) --ignore-not-found
-	kubectl create configmap rq-config \
-		--from-file=./templates/pod-template.json \
-		-n $(NS)
-testit:   
+test:   
 	@echo $(NS) is the namespace
 	kubectl create -f deploy/operator.yaml -n $(NS)
 	kubectl create -f deploy/operator2.yaml -n $(NS)
@@ -17,12 +11,24 @@ testit:
 testitlocal:   
 	export OPERATOR_NAME=rqlite-operator
 	operator-sdk up local --namespace=$(NS)
-cleanup:   
+clean:   
 	@echo $(NS) is the namespace
 	kubectl delete rqclusters --all -n $(NS)
 	kubectl delete deploy --all -n $(NS)
-setup:
+	kubectl delete namespace $(NS)
+	kubectl delete crd rqclusters.rqcluster.example.com
+verify: 
+	kubectl -n $(NS) get deploy
+	kubectl -n $(NS) get pod
+	kubectl -n $(NS) get svc
+	kubectl -n $(NS) get pvc
+setup: clean
+	kubectl create namespace $(NS)
 	@echo $(NS) is the namespace
+	kubectl delete configmap rq-config -n $(NS) --ignore-not-found
+	kubectl create configmap rq-config \
+		--from-file=./templates/pod-template.json \
+		-n $(NS)
 	kubectl create -n $(NS) -f deploy/service_account.yaml
 	kubectl create -n $(NS) -f deploy/role.yaml
 	kubectl create -n $(NS) -f deploy/role_binding.yaml
