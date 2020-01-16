@@ -25,4 +25,5 @@ $ kubectl -n rq get pod
 
 ## Documentation
 [Design](https://jmccormick2001.github.io/rqlite-operator/docs/design)
+
 [Building from Source](https://jmccormick2001.github.io/rqlite-operator/docs/building-from-source)
