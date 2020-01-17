@@ -26,6 +26,7 @@ The rqlite-operator includes the following features:
  * Prometheus metrics are created by the rqlite-operator by default.
  * The rqlite Pods include an anti-affinity rule which attempts to have the rqlite leader deployed onto a different Kubernetes cluster node than where the rqlite followers are deployed to.  This supports spreading the rqlite cluster nodes across different physical compute nodes.
  * The rqlite-operator is available via the Operator Lifecycle Marketplace.
+ * The rqo command line client is being developed to assist the end user in creating rqlite custom resources.
 
 ## Features Being Worked On
 
