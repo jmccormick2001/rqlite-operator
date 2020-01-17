@@ -1,7 +1,8 @@
 NS = rq
+IMAGEUSER = someuser
 rqliteimage:   
-	sudo --preserve-env buildah bud -f ./rqlite-image/Dockerfile -t quay.io/jemccorm/rqlite:v0.0.2 ./rqlite-image
-	sudo --preserve-env buildah push --authfile /home/jeffmc/.docker/config.json jemccorm/rqlite:v0.0.2 docker://quay.io/jemccorm/rqlite:v0.0.2
+	sudo --preserve-env buildah bud -f ./rqlite-image/Dockerfile -t quay.io/$(IMAGEUSER)/rqlite:v0.0.2 ./rqlite-image
+	sudo --preserve-env buildah push --authfile /home/jeffmc/.docker/config.json $(IMAGEUSER)/rqlite:v0.0.2 docker://quay.io/$(IMAGEUSER)/rqlite:v0.0.2
 test:   
 	@echo $(NS) is the namespace
 	kubectl create -f deploy/operator.yaml -n $(NS)
@@ -34,9 +35,9 @@ setup: clean
 	kubectl create -n $(NS) -f deploy/role_binding.yaml
 	kubectl create -n $(NS) -f deploy/crds/rqcluster.example.com_rqclusters_crd.yaml
 operatorimage:   
-	operator-sdk build quay.io/jemccorm/rqlite-operator:v0.0.2
+	operator-sdk build quay.io/$(IMAGEUSER)/rqlite-operator:v0.0.2
 pushoperatorimage:   
-	docker push quay.io/jemccorm/rqlite-operator:v0.0.2
+	docker push quay.io/$(IMAGEUSER)/rqlite-operator:v0.0.2
 olmuninstall:   
 	kubectl -n $(NS) delete csv rqlite-operator.v0.0.1 --ignore-not-found
 	kubectl -n $(NS) delete operatorgroup rqlite-operator-group --ignore-not-found
