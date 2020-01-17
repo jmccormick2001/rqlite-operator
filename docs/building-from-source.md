@@ -4,21 +4,31 @@ description: Instructions if you want to build the rqlite-operator from source.
 
 # Building from Source
 
-## Getting Super Powers
+## Prerequisites
 
-Becoming a super hero is a fairly straight forward process:
+For this build, I am assuming you are working on a Linux
+system that has the following packages installed:
+ 
+ * buildah
+ * docker
+ * golang 1.13+
 
-```
-$ give me super-powers
-```
+Modify the Makefile environment variables to your local environment
+by changing the following in the Makefile:
 
- Super-powers are granted randomly so please submit an issue if you're not happy with yours.
+ * NS - this is the namespace into which the rqlite-operator will be deployed,
+`rq` is the default value 
+ * IMAGEUSER - this is the user name for the rqlite-operator and rqlite images which are part of the image path, `someuser` is the default value
+ 
+## Build Steps
 
-Once you're strong enough, save the world:
+Building the rqlite-operator from source code includes
+the following:
 
 ```bash
-# Ain't no code for that yet, sorry
-echo 'You got to trust me on this, I saved the world'
+mkdir rqlite-operator
+git clone https://github.com/jmccormick2001/rqlite-operator.git
+cd rqlite-operator
+make rqliteimage
+make operatorimage
 ```
-
-
