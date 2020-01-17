@@ -5,7 +5,10 @@ go 1.13
 require (
 	github.com/go-logr/logr v0.1.0
 	github.com/operator-framework/operator-sdk v0.14.1-0.20200114205503-152e5d5bc3a1
+	github.com/sirupsen/logrus v1.4.2
+	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5
+	github.com/spf13/viper v1.4.0
 	gopkg.in/yaml.v2 v2.2.4
 	k8s.io/api v0.0.0
 	k8s.io/apimachinery v0.0.0

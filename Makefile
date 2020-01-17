@@ -1,5 +1,7 @@
 NS = rq
 IMAGEUSER = someuser
+rqo:   
+	go build -o bin/rqo github.com/jmccormick2001/rqlite-operator/pkg/cli
 rqliteimage:   
 	sudo --preserve-env buildah bud -f ./rqlite-image/Dockerfile -t quay.io/$(IMAGEUSER)/rqlite:v0.0.2 ./rqlite-image
 	sudo --preserve-env buildah push --authfile /home/jeffmc/.docker/config.json $(IMAGEUSER)/rqlite:v0.0.2 docker://quay.io/$(IMAGEUSER)/rqlite:v0.0.2
