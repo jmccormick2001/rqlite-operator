@@ -10,7 +10,7 @@ test:
 	kubectl create -f deploy/operator.yaml -n $(NS)
 	kubectl create -f deploy/operator2.yaml -n $(NS)
 	sleep 5
-	kubectl create -n $(NS) -f deploy/crds/rqcluster.example.com_v1alpha1_rqcluster_cr.yaml
+#	kubectl create -n $(NS) -f deploy/crds/rqcluster.example.com_v1alpha1_rqcluster_cr.yaml
 testitlocal:   
 	export OPERATOR_NAME=rqlite-operator
 	operator-sdk up local --namespace=$(NS)
@@ -25,7 +25,7 @@ verify:
 	kubectl -n $(NS) get pod
 	kubectl -n $(NS) get svc
 	kubectl -n $(NS) get pvc
-setup: clean
+setup:
 	kubectl create namespace $(NS)
 	@echo $(NS) is the namespace
 	kubectl delete configmap rq-config -n $(NS) --ignore-not-found
