@@ -1,0 +1,18 @@
+apiVersion: rqcluster.example.com/v1alpha1
+kind: Rqcluster
+metadata:
+  name: example-rqcluster
+  namespace: rq
+status:
+  nodes:
+spec:
+  # Add fields here
+  size: 3
+  memorylimit: ''
+  memoryrequest: '160Mi'
+  storageclass: 'fast'
+  accessmode: 'ReadWriteOnce'
+  storagelimit: '10Mi'
+  cpulimit: ''
+  cpurequest: '10m'
+

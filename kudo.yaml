@@ -1,0 +1,99 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  creationTimestamp: null
+  labels:
+    app: kudo-manager
+  name: kudo-manager
+  namespace: kudo-system
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  creationTimestamp: null
+  name: kudo-manager-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: kudo-manager
+  namespace: kudo-system
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    app: kudo-manager
+    control-plane: controller-manager
+  name: kudo-controller-manager-service
+  namespace: kudo-system
+spec:
+  ports:
+  - name: kudo
+    port: 443
+    targetPort: webhook-server
+  selector:
+    app: kudo-manager
+    control-plane: controller-manager
+status:
+  loadBalancer: {}
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  creationTimestamp: null
+  labels:
+    app: kudo-manager
+    control-plane: controller-manager
+  name: kudo-controller-manager
+  namespace: kudo-system
+spec:
+  selector:
+    matchLabels:
+      app: kudo-manager
+      control-plane: controller-manager
+  serviceName: kudo-controller-manager-service
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: kudo-manager
+        control-plane: controller-manager
+    spec:
+      containers:
+      - command:
+        - /root/manager
+        env:
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: SECRET_NAME
+          value: kudo-webhook-server-secret
+        - name: ENABLE_WEBHOOKS
+          value: "false"
+        image: kudobuilder/controller:v0.10.1
+        imagePullPolicy: Always
+        name: manager
+        ports:
+        - containerPort: 443
+          name: webhook-server
+          protocol: TCP
+        resources:
+          requests:
+            cpu: 100m
+            memory: 50Mi
+      serviceAccountName: kudo-manager
+      terminationGracePeriodSeconds: 10
+  updateStrategy: {}
+status:
+  replicas: 0
+
+...

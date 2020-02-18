@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: rq
+  name: my-custom-test-pod
+  labels:
+    vendor: jmccormick2001
+status: 
+  phase: Succeeded

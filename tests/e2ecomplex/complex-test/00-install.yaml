@@ -1,0 +1,34 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    vendor: jmccormick2001
+  name: my-custom-test-pod
+  namespace: rq
+spec:
+  containers:
+  - command:
+    - my-custom-test
+    env:
+    - name: EXPECTED_NODES
+      value: "3"
+    - name: CR_NAME
+      value: "example-rqcluster"
+    - name: POD_NAME
+      valueFrom:
+        fieldRef:
+          apiVersion: v1
+          fieldPath: metadata.name
+    - name: POD_NAMESPACE
+      valueFrom:
+        fieldRef:
+          apiVersion: v1
+          fieldPath: metadata.namespace
+    image: quay.io/jemccorm/my-custom-test:v0.0.1
+    imagePullPolicy: IfNotPresent
+    name: my-custom-test
+    resources: {}
+  restartPolicy: Never
+  securityContext: {}
+  serviceAccountName: my-custom-test
+

@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: rq
+  labels:
+    vendor: jmccormick2001
+status: 
+  phase: Running
