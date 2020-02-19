@@ -1,6 +1,10 @@
 apiVersion: kudo.dev/v1alpha1
 kind: TestStep
 delete:
+- apiVersion: v1
+  kind: Pod
+  name: my-static-test
+  namespace: rq
 # Delete a ConfigMap
 - apiVersion: v1
   kind: ConfigMap

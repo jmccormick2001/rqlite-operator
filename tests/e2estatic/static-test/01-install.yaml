@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    vendor: jmccormick2001
+  name: my-static-test
+  namespace: rq
+spec:
+  containers:
+  - command:
+    - my-static-test
+    env:
+    - name: CONFIGMAP_NAME
+      value: "my-static-test"
+    - name: POD_NAMESPACE
+      valueFrom:
+        fieldRef:
+          apiVersion: v1
+          fieldPath: metadata.namespace
+    image: quay.io/jemccorm/my-static-test:v0.0.1
+    imagePullPolicy: IfNotPresent
+    name: my-static-test
+    resources: {}
+  restartPolicy: Never
+  securityContext: {}
+  serviceAccountName: my-static-test
+
