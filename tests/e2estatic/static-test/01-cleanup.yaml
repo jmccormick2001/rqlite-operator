@@ -1,0 +1,8 @@
+apiVersion: kudo.dev/v1alpha1
+kind: TestStep
+delete:
+# Delete a ConfigMap
+- apiVersion: v1
+  kind: ConfigMap
+  name: my-static-test
+  namespace: rq
