@@ -23,5 +23,5 @@ spec:
     resources: {}
   restartPolicy: Never
   securityContext: {}
-  serviceAccountName: my-static-test
+  serviceAccountName: rqlite-operator
 
